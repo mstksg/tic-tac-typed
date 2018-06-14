@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE EmptyCase             #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE KindSignatures        #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -21,14 +22,17 @@ module TTT.Core (
     Piece(..), SPiece()
   , Mode(..), SMode
   , Sing(SPX, SPO, SMPlay, SMStop)
-  , alt, Alt, sAlt
+  , altP, AltP, sAltP
   , lines, Lines, sLines
+  , emptyBoard, sEmptyBoard, EmptyBoard
   , Victory(..), SomeVictory(..)
   , Full, BoardWon
   , GameState(..)
+  , Pick(..), pick
   , play
   ) where
 
+import           Data.Dependent.Sum
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
@@ -40,14 +44,15 @@ import           Data.Type.Product
 import           Data.Type.Sum
 import           Prelude hiding                       (lines)
 import           TTT.Combinator
+import           Type.Family.Nat
 
 $(singletons [d|
   data Piece = PX | PO
-    deriving Eq
+    deriving (Show, Eq)
 
-  alt :: Piece -> Piece
-  alt PX = PO
-  alt PO = PX
+  altP :: Piece -> Piece
+  altP PX = PO
+  altP PO = PX
 
   data Mode  = MPlay Piece
              | MStop (Maybe Piece)
@@ -58,6 +63,12 @@ $(singletons [d|
       , [x1,x2,x3], [y1,y2,y3], [z1,z2,z3]
       , [x1,y2,z3], [x3,y2,z1]
       ]
+
+  emptyBoard :: [[Maybe Piece]]
+  emptyBoard = [ [Nothing, Nothing, Nothing]
+               , [Nothing, Nothing, Nothing]
+               , [Nothing, Nothing, Nothing]
+               ]
   |])
 
 data Victory :: k -> [Maybe k] -> Type where
@@ -116,6 +127,25 @@ gameState b f g = case boardWon b of
       Disproved notfilled ->
         f $ GSInPlay notwon notfilled
 
+data Pick :: [[Maybe Piece]] -> Type where
+    PickValid  :: Index b row -> Index row 'Nothing  -> Pick b
+    PickPlayed :: Index b row -> Index row ('Just p) -> Pick b
+    PickOoBX   :: N           -> N -> Pick b
+    PickOoBY   :: Index b row -> N -> Pick b
+
+pick
+    :: N
+    -> N
+    -> Sing b
+    -> Pick b
+pick i j b = case nIndex i b of
+    Nothing           -> PickOoBX i j
+    Just (row :=> i') -> case nIndex j row of
+      Nothing -> PickOoBY i' j
+      Just (p :=> j') -> case p of
+        SNothing -> PickValid  i' j'
+        SJust _  -> PickPlayed i' j'
+
 place
     :: forall (b :: [[Maybe Piece]]) row. ()
     => Index b row
@@ -132,9 +162,11 @@ play
     -> Index row 'Nothing
     -> Sing p
     -> Sing b
-    -> (forall b'  . Sing b' -> GameState ('MPlay (Alt p)) b' -> r)
-    -> (forall b' j. Sing b' -> GameState ('MStop j      ) b' -> r)
+    -> (forall b'  . Sing b' -> GameState ('MPlay (AltP p)) b' -> r)
+    -> (forall b' j. Sing b' -> GameState ('MStop j       ) b' -> r)
     -> r
 play i j (fromSing->p) b f g = withSomeSing (place i j p b) $ \b' ->
     gameState b' (f b') (g b')
 
+-- TODO: can Play return a b' with a known `(Index b' row, Index row ('Just p))`?
+-- but do we need to?

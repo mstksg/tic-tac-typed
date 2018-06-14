@@ -24,6 +24,7 @@ dependencies:
 - type-combinators
 - type-combinators-singletons
 - singletons
+- dependent-sum
 
 ghc-options:
 - -Wall

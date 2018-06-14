@@ -23,8 +23,10 @@ module TTT.Combinator (
   , IsJust(..), isJust
   , decideAll, decideAny
   , withSum
+  , ixSing
   , indexN
   , mapIx, sMapIx, MapIx
+  , nIndex
   ) where
 
 import           Data.Kind
@@ -38,6 +40,7 @@ import           Data.Type.Index
 import           Data.Type.Product
 import           Data.Type.Sum
 import           Type.Family.Nat
+import           Data.Dependent.Sum
 
 data Uniform :: k -> [k] -> Type where
     UZ :: Uniform a '[a]
@@ -114,6 +117,16 @@ withSum = \case
     InL x  -> \f -> f IZ x
     InR xs -> \f -> withSum xs (f . IS)
 
+ixSing
+    :: Index as a
+    -> Sing as
+    -> Sing a
+ixSing = \case
+   IZ -> \case
+     s `SCons` _ -> s
+   IS i -> \case
+     _ `SCons` ss -> ixSing i ss
+
 indexN
     :: Index as a
     -> N
@@ -124,5 +137,20 @@ indexN = \case
 $(singletons [d|
   mapIx :: N -> (a -> a) -> [a] -> [a]
   mapIx Z     f (x:xs) = f x : xs
-  mapIx (S n) f (x:xs) = x   : mapIx n f xs
+  mapIx (S n) f (x:xs) =   x : mapIx n f xs
   |])
+
+nIndex
+    :: forall k (as :: [k]). ()
+    => N
+    -> Sing as
+    -> Maybe (DSum Sing (Index as))
+nIndex = \case
+    Z -> \case
+      SNil -> Nothing
+      s `SCons` _ -> Just $ s :=> IZ
+    S i -> \case
+      SNil -> Nothing
+      _ `SCons` ss -> case nIndex i ss of
+        Just (s :=> j) -> Just (s :=> IS j)
+        Nothing        -> Nothing
