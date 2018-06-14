@@ -18,6 +18,15 @@
 {-# LANGUAGE ViewPatterns          #-}
 
 module TTT.Core (
+    Piece(..), SPiece()
+  , Mode(..), SMode
+  , Sing(SPX, SPO, SMPlay, SMStop)
+  , alt, Alt, sAlt
+  , lines, Lines, sLines
+  , Victory(..), SomeVictory(..)
+  , Full, BoardWon
+  , GameState(..)
+  , play
   ) where
 
 import           Data.Kind
@@ -26,14 +35,11 @@ import           Data.Singletons.Decide
 import           Data.Singletons.Prelude.List hiding  (Sum)
 import           Data.Singletons.Prelude.Maybe hiding (IsJust)
 import           Data.Singletons.TH
-import           Data.Type.Combinator.Singletons
 import           Data.Type.Index
 import           Data.Type.Product
 import           Data.Type.Sum
-import           Data.Type.Vector
 import           Prelude hiding                       (lines)
-import           Type.Class.Known
-import           Type.Family.Nat
+import           TTT.Combinator
 
 $(singletons [d|
   data Piece = PX | PO
@@ -52,18 +58,7 @@ $(singletons [d|
       , [x1,x2,x3], [y1,y2,y3], [z1,z2,z3]
       , [x1,y2,z3], [x3,y2,z1]
       ]
-
-  mapIx :: N -> (a -> a) -> [a] -> [a]
-  mapIx Z     f (x:xs) = f x : xs
-  mapIx (S n) f (x:xs) = x   : mapIx n f xs
   |])
-
-data Uniform :: k -> [k] -> Type where
-    UZ :: Uniform a '[a]
-    US :: Uniform a as -> Uniform a (a ': as)
-
-data SomeUniform :: [k] -> Type where
-    SU :: Sing a -> Uniform a as -> SomeUniform as
 
 data Victory :: k -> [Maybe k] -> Type where
     V :: Uniform ('Just a) as -> Victory a as
@@ -71,57 +66,13 @@ data Victory :: k -> [Maybe k] -> Type where
 data SomeVictory :: [Maybe k] -> Type where
     SV :: Sing a -> Uniform ('Just a) as -> SomeVictory as
 
-data IsJust :: Maybe k -> Type where
-    IsJust :: IsJust ('Just a)
-
-instance Known IsJust ('Just a) where
-    known = IsJust
-
 type Full       = Prod (Prod IsJust)
 type BoardWon b = Sum SomeVictory (Lines b)
-
-isJust :: Sing a -> Decision (IsJust a)
-isJust = \case
-    SNothing -> Disproved $ \case {}
-    SJust _  -> Proved IsJust
-
-decideAll
-    :: forall f as. ()
-    => (forall a. Sing a -> Decision (f a))
-    -> Sing as
-    -> Decision (Prod f as)
-decideAll f = go
-  where
-    go  :: Sing bs -> Decision (Prod f bs)
-    go  = \case
-      SNil         -> Proved Ø
-      s `SCons` ss -> case f s of
-        Proved p    -> case go ss of
-          Proved ps    -> Proved $ p :< ps
-          Disproved vs -> Disproved $ \case
-            _ :< ps -> vs ps
-        Disproved v -> Disproved $ \case
-            p :< _ -> v p
 
 full
     :: Sing b
     -> Decision (Full b)
 full = decideAll (decideAll isJust)
-
-uniform
-    :: forall k (as :: [k]). SDecide k
-    => Sing as
-    -> Decision (SomeUniform as)
-uniform = \case
-    SNil            -> Disproved $ \case
-      SU _ u -> case u of {}
-    sx `SCons` SNil -> Proved $ SU sx UZ
-    sx `SCons` ss@(_ `SCons` _) -> case uniform ss of
-      Proved (SU sy us) -> case sx %~ sy of
-        Proved Refl -> Proved $ SU sx (US us)
-        Disproved v -> Disproved undefined
-      Disproved vs -> Disproved $ \case
-        SU s (US u) -> vs $ SU s u
 
 someVictory
     :: forall k (as :: [Maybe k]). SDecide k
@@ -134,33 +85,6 @@ someVictory ss = case uniform ss of
     Proved (SU (SJust s) u) -> Proved $ SV s u
     Disproved v -> Disproved $ \case
       SV s u -> v (SU (SJust s) u)
-
-decideAny
-    :: forall f as. ()
-    => (forall a. Sing a -> Decision (f a))
-    -> Sing as
-    -> Decision (Sum f as)
-decideAny f = go
-  where
-    go  :: Sing bs -> Decision (Sum f bs)
-    go  = \case
-      SNil         -> Disproved $ \case {}
-      s `SCons` ss -> case f s of
-        Proved p    -> Proved $ InL p
-        Disproved v -> case go ss of
-          Proved ps    -> Proved $ InR ps
-          Disproved vs -> Disproved $ \case
-            InL p  -> v  p
-            InR ps -> vs ps
-
-withSum
-    :: forall f as r. ()
-    => Sum f as
-    -> (forall a. Index as a -> f a -> r)
-    -> r
-withSum = \case
-    InL x  -> \f -> f IZ x
-    InR xs -> \f -> withSum xs (f . IS)
 
 boardWon
     :: forall k (b :: [[Maybe k]]). SDecide k
@@ -191,13 +115,6 @@ gameState b f g = case boardWon b of
         g $ GSCats notwon filled
       Disproved notfilled ->
         f $ GSInPlay notwon notfilled
-
-indexN
-    :: Index as a
-    -> N
-indexN = \case
-    IZ   -> Z
-    IS i -> S $ indexN i
 
 place
     :: forall (b :: [[Maybe Piece]]) row. ()
