@@ -21,28 +21,34 @@ description:         Please see the README on GitHub at <https://github.com/mstk
 
 dependencies:
 - base >= 4.7 && < 5
+- type-combinators
+- type-combinators-singletons
+- singletons
+
+ghc-options:
+- -Wall
 
 library:
   source-dirs: src
 
-executables:
-  tic-tac-typed-exe:
-    main:                Main.hs
-    source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - tic-tac-typed
+# executables:
+#   tic-tac-typed-exe:
+#     main:                Main.hs
+#     source-dirs:         app
+#     ghc-options:
+#     - -threaded
+#     - -rtsopts
+#     - -with-rtsopts=-N
+#     dependencies:
+#     - tic-tac-typed
 
-tests:
-  tic-tac-typed-test:
-    main:                Spec.hs
-    source-dirs:         test
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - tic-tac-typed
+# tests:
+#   tic-tac-typed-test:
+#     main:                Spec.hs
+#     source-dirs:         test
+#     ghc-options:
+#     - -threaded
+#     - -rtsopts
+#     - -with-rtsopts=-N
+#     dependencies:
+#     - tic-tac-typed
