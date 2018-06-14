@@ -26,6 +26,7 @@ import           Data.Singletons.Decide
 import           Data.Singletons.Prelude.List hiding  (Sum)
 import           Data.Singletons.Prelude.Maybe hiding (IsJust)
 import           Data.Singletons.TH
+import           Data.Type.Combinator.Singletons
 import           Data.Type.Index
 import           Data.Type.Product
 import           Data.Type.Sum
@@ -51,6 +52,10 @@ $(singletons [d|
       , [x1,x2,x3], [y1,y2,y3], [z1,z2,z3]
       , [x1,y2,z3], [x3,y2,z1]
       ]
+
+  mapIx :: N -> (a -> a) -> [a] -> [a]
+  mapIx Z     f (x:xs) = f x : xs
+  mapIx (S n) f (x:xs) = x   : mapIx n f xs
   |])
 
 data Uniform :: k -> [k] -> Type where
@@ -187,19 +192,12 @@ gameState b f g = case boardWon b of
       Disproved notfilled ->
         f $ GSInPlay notwon notfilled
 
-overIx
-    :: forall k (as :: [k]) (a :: k). SingKind k
-    => Index as a
-    -> (Sing a -> Demote k)
-    -> Sing as
-    -> Demote [k]
-overIx = \case
-    IZ -> \f -> \case
-      s `SCons` SNil -> [f s]
-      s `SCons` ss@(_ `SCons` _) -> f s : fromSing ss
-    IS i -> \f -> \case
-      s `SCons` SNil -> [fromSing s]
-      s `SCons` ss@(_ `SCons` _) -> fromSing s : overIx i f ss
+indexN
+    :: Index as a
+    -> N
+indexN = \case
+    IZ   -> Z
+    IS i -> S $ indexN i
 
 place
     :: forall (b :: [[Maybe Piece]]) row. ()
@@ -208,7 +206,8 @@ place
     -> Piece
     -> Sing b
     -> [[Maybe Piece]]
-place i j p = overIx i (overIx j (const (Just p)))
+place i j p = (mapIx (indexN i) . mapIx (indexN j)) (const (Just p))
+            . fromSing
 
 play
     :: forall (b :: [[Maybe Piece]]) row p r. ()
