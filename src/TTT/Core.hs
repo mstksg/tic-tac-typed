@@ -17,7 +17,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE ViewPatterns          #-}
 
-module TTT (
+module TTT.Core (
   ) where
 
 import           Data.Kind
@@ -220,3 +220,4 @@ play
     -> r
 play i j (fromSing->p) b f g = withSomeSing (place i j p b) $ \b' ->
     gameState b' (f b') (g b')
+
