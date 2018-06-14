@@ -15,6 +15,7 @@
 {-# LANGUAGE TypeInType            #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE ViewPatterns          #-}
 
 module TTT (
   ) where
@@ -36,6 +37,10 @@ import           Type.Family.Nat
 $(singletons [d|
   data Piece = PX | PO
     deriving Eq
+
+  alt :: Piece -> Piece
+  alt PX = PO
+  alt PO = PX
 
   data Mode  = MPlay Piece
              | MStop (Maybe Piece)
@@ -181,3 +186,38 @@ gameState b f g = case boardWon b of
         g $ GSCats notwon filled
       Disproved notfilled ->
         f $ GSInPlay notwon notfilled
+
+overIx
+    :: forall k (as :: [k]) (a :: k). SingKind k
+    => Index as a
+    -> (Sing a -> Demote k)
+    -> Sing as
+    -> Demote [k]
+overIx = \case
+    IZ -> \f -> \case
+      s `SCons` SNil -> [f s]
+      s `SCons` ss@(_ `SCons` _) -> f s : fromSing ss
+    IS i -> \f -> \case
+      s `SCons` SNil -> [fromSing s]
+      s `SCons` ss@(_ `SCons` _) -> fromSing s : overIx i f ss
+
+place
+    :: forall (b :: [[Maybe Piece]]) row. ()
+    => Index b row
+    -> Index row 'Nothing
+    -> Piece
+    -> Sing b
+    -> [[Maybe Piece]]
+place i j p = overIx i (overIx j (const (Just p)))
+
+play
+    :: forall (b :: [[Maybe Piece]]) row p r. ()
+    => Index b row
+    -> Index row 'Nothing
+    -> Sing p
+    -> Sing b
+    -> (forall b'  . Sing b' -> GameState ('MPlay (Alt p)) b' -> r)
+    -> (forall b' j. Sing b' -> GameState ('MStop j      ) b' -> r)
+    -> r
+play i j (fromSing->p) b f g = withSomeSing (place i j p b) $ \b' ->
+    gameState b' (f b') (g b')
