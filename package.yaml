@@ -28,6 +28,7 @@ dependencies:
 
 ghc-options:
 - -Wall
+- -fno-max-relevant-binds
 
 library:
   source-dirs: src

@@ -25,7 +25,7 @@ module TTT.Core (
   , altP, AltP, sAltP
   , lines, Lines, sLines
   , emptyBoard, sEmptyBoard, EmptyBoard
-  , Victory(..), SomeVictory(..)
+  , Victory(..)
   , Full, BoardWon
   , GameState(..)
   , Pick(..), pick
@@ -71,40 +71,40 @@ $(singletons [d|
                ]
   |])
 
-data Victory :: k -> [Maybe k] -> Type where
-    V :: Uniform ('Just a) as -> Victory a as
+data Victory :: [Maybe k] -> Type where
+    V :: Uniform ('Just a ': as) -> Victory ('Just a ': as)
 
-data SomeVictory :: [Maybe k] -> Type where
-    SV :: Sing a -> Uniform ('Just a) as -> SomeVictory as
+data Winner :: k -> [Maybe k] -> Type where
+    W :: Uniform ('Just a ': as) -> Winner a ('Just a ': as)
 
 type Full       = Prod (Prod IsJust)
-type BoardWon b = Sum SomeVictory (Lines b)
+type BoardWon b = Sum Victory (Lines b)
 
 full
     :: Sing b
     -> Decision (Full b)
 full = decideAll (decideAll isJust)
 
-someVictory
+victory
     :: forall k (as :: [Maybe k]). SDecide k
     => Sing as
-    -> Decision (SomeVictory as)
-someVictory ss = case uniform ss of
-    Proved (SU SNothing u) -> Disproved $ \case
-      SV _ UZ     -> case u of {}
-      SV _ (US _) -> case u of {}
-    Proved (SU (SJust s) u) -> Proved $ SV s u
+    -> Decision (Victory as)
+victory ss = case uniform ss of
+    Proved u -> case ss of
+      SNil               -> Disproved $ \case {}
+      SNothing `SCons` _ -> Disproved $ \case {}
+      SJust _  `SCons` _ -> Proved $ V u
     Disproved v -> Disproved $ \case
-      SV s u -> v (SU (SJust s) u)
+      V u -> v u
 
 boardWon
     :: forall k (b :: [[Maybe k]]). SDecide k
     => Sing b
     -> Decision (BoardWon b)
-boardWon = decideAny someVictory . sLines
+boardWon = decideAny victory . sLines
 
 data GameState :: Mode -> [[Maybe Piece]] -> Type where
-    GSVictory :: Sum (Victory p) (Lines b)
+    GSVictory :: Sum (Winner p) (Lines b)
               -> GameState ('MStop ('Just p)) b
     GSCats    :: Refuted (BoardWon b)
               -> Full b
@@ -119,8 +119,8 @@ gameState
     -> (forall j. GameState ('MStop j) b -> r)
     -> r
 gameState b f g = case boardWon b of
-    Proved won -> withSum won $ \i (SV _ v) ->
-      g $ GSVictory (injectSum i (V v))
+    Proved won -> withSum won $ \i (V v) ->
+      g $ GSVictory (injectSum i (W v))
     Disproved notwon -> case full b of
       Proved filled ->
         g $ GSCats notwon filled

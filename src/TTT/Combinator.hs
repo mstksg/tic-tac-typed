@@ -19,7 +19,7 @@
 
 
 module TTT.Combinator (
-    Uniform(..), SomeUniform(..), uniform
+    Uniform(..), uniform
   , IsJust(..), isJust
   , decideAll, decideAny
   , withSum
@@ -42,27 +42,41 @@ import           Data.Type.Sum
 import           Type.Family.Nat
 import           Data.Dependent.Sum
 
-data Uniform :: k -> [k] -> Type where
-    UZ :: Uniform a '[a]
-    US :: Uniform a as -> Uniform a (a ': as)
-
-data SomeUniform :: [k] -> Type where
-    SU :: Sing a -> Uniform a as -> SomeUniform as
+data Uniform :: [k] -> Type where
+    UZ :: Uniform '[a]
+    US :: Uniform (a ': as) -> Uniform (a ': a ': as)
 
 uniform
     :: forall k (as :: [k]). SDecide k
     => Sing as
-    -> Decision (SomeUniform as)
+    -> Decision (Uniform as)
 uniform = \case
-    SNil            -> Disproved $ \case
-      SU _ u -> case u of {}
-    sx `SCons` SNil -> Proved $ SU sx UZ
-    sx `SCons` ss@(_ `SCons` _) -> case uniform ss of
-      Proved (SU sy us) -> case sx %~ sy of
-        Proved Refl -> Proved $ SU sx (US us)
-        Disproved v -> Disproved undefined
-      Disproved vs -> Disproved $ \case
-        SU s (US u) -> vs $ SU s u
+    SNil         -> Disproved $ \case {}
+    x `SCons` xs -> uniform' x xs
+
+uniform' :: forall k (a :: k) as. SDecide k
+    => Sing a
+    -> Sing as
+    -> Decision (Uniform (a ': as))
+uniform' x = go
+  where
+    go :: Sing bs -> Decision (Uniform (a ': bs))
+    go = \case
+      SNil -> Proved UZ
+      y `SCons` SNil -> case x %~ y of
+        Proved Refl -> Proved (US UZ)
+        Disproved v -> Disproved $ \case US _ -> v Refl
+      y `SCons` ss@(_ `SCons` _) -> case x %~ y of
+        Proved Refl -> case go ss of
+          Proved u    -> Proved (US u)
+          Disproved v -> Disproved $ \case US u -> v u
+        Disproved v -> Disproved $ \case US _ -> v Refl
+
+-- uni = \case
+--     x `SCons` SNil -> Proved UZ
+--     x `SCons` (_ `SCons` _) -> case uni
+    -- SNil -> Proved $ UZ
+
 
 data IsJust :: Maybe k -> Type where
     IsJust :: IsJust ('Just a)
