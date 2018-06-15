@@ -28,17 +28,21 @@ module TTT.Core (
   , Victory(..)
   , Full, BoardWon
   , GameState(..)
-  , Pick(..), pick
+  -- , Pick(..), pick
   , play
+  , PlaceBoard
+  , placeSel
   ) where
 
 import           Data.Dependent.Sum
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
+import           Data.Singletons.Prelude
 import           Data.Singletons.Prelude.List hiding  (Sum)
 import           Data.Singletons.Prelude.Maybe hiding (IsJust)
 import           Data.Singletons.TH
+import           Data.Type.Combinator.Singletons
 import           Data.Type.Index
 import           Data.Type.Product
 import           Data.Type.Sum
@@ -127,46 +131,72 @@ gameState b f g = case boardWon b of
       Disproved notfilled ->
         f $ GSInPlay notwon notfilled
 
-data Pick :: [[Maybe Piece]] -> Type where
-    PickValid  :: Index b row -> Index row 'Nothing  -> Pick b
-    PickPlayed :: Index b row -> Index row ('Just p) -> Pick b
-    PickOoBX   :: N           -> N -> Pick b
-    PickOoBY   :: Index b row -> N -> Pick b
+data Pick :: N -> N -> [[Maybe Piece]] -> Type where
+    PickValid  :: Sel i b row -> Sel j row 'Nothing  -> Pick i j b
+    PickPlayed :: Sel i b row -> Sel j row ('Just p) -> Pick i j b
 
-pick
-    :: N
-    -> N
-    -> Sing b
-    -> Pick b
-pick i j b = case nIndex i b of
-    Nothing           -> PickOoBX i j
-    Just (row :=> i') -> case nIndex j row of
-      Nothing -> PickOoBY i' j
-      Just (p :=> j') -> case p of
-        SNothing -> PickValid  i' j'
-        SJust _  -> PickPlayed i' j'
+-- data Pick :: [[Maybe Piece]] -> Type where
+--     PickValid  :: Index b row -> Index row 'Nothing  -> Pick b
+--     PickPlayed :: Index b row -> Index row ('Just p) -> Pick b
+--     PickOoBX   :: N           -> N -> Pick b
+--     PickOoBY   :: Index b row -> N -> Pick b
 
-place
-    :: forall (b :: [[Maybe Piece]]) row. ()
-    => Index b row
-    -> Index row 'Nothing
-    -> Piece
-    -> Sing b
-    -> [[Maybe Piece]]
-place i j p = (mapIx (indexN i) . mapIx (indexN j)) (const (Just p))
-            . fromSing
+-- pick
+--     :: N
+--     -> N
+--     -> Sing b
+--     -> Pick b
+-- pick i j b = case nIndex i b of
+--     Nothing           -> PickOoBX i j
+--     Just (row :=> i') -> case nIndex j row of
+--       Nothing -> PickOoBY i' j
+--       Just (p :=> j') -> case p of
+--         SNothing -> PickValid  i' j'
+--         SJust _  -> PickPlayed i' j'
 
-play
-    :: forall (b :: [[Maybe Piece]]) row p r. ()
-    => Index b row
-    -> Index row 'Nothing
+$(singletons [d|
+  placeBoard :: N -> N -> Piece -> [[Maybe Piece]] -> [[Maybe Piece]]
+  placeBoard Z     j p (x:xs) = setIx j (Just p) x : xs
+  placeBoard (S n) j p (x:xs) =                  x : placeBoard n j p xs
+  |])
+
+placeSel
+    :: forall b i j p row. ()
+    => Sel i b    row
+    -> Sel j row 'Nothing
     -> Sing p
     -> Sing b
-    -> (forall b'  . Sing b' -> GameState ('MPlay (AltP p)) b' -> r)
-    -> (forall b' j. Sing b' -> GameState ('MStop j       ) b' -> r)
+    -> Sing (PlaceBoard i j p b)
+placeSel = \case
+    SelZ -> \j p -> \case
+      r `SCons` rs -> setSel j (SJust p) r `SCons` rs
+    SelS i -> \j p -> \case
+      r `SCons` rs ->                    r `SCons` placeSel i j p rs
+
+play
+    :: forall (b :: [[Maybe Piece]]) b' i j row p r. (b' ~ PlaceBoard i j p b)
+    => Sel i b    row
+    -> Sel j row 'Nothing
+    -> Sing p
+    -> Sing b
+    -> (          Sing b' -> GameState ('MPlay (AltP p)) b' -> r)
+    -> (forall s. Sing b' -> GameState ('MStop s       ) b' -> r)
     -> r
-play i j (fromSing->p) b f g = withSomeSing (place i j p b) $ \b' ->
-    gameState b' (f b') (g b')
+play i j p b f g = gameState b' (f b') (g b')
+  where
+    b' = placeSel i j p b
+
+-- play
+--     :: forall (b :: [[Maybe Piece]]) row p r. ()
+--     => Index b row
+--     -> Index row 'Nothing
+--     -> Sing p
+--     -> Sing b
+--     -> (forall b'  . Sing b' -> GameState ('MPlay (AltP p)) b' -> r)
+--     -> (forall b' j. Sing b' -> GameState ('MStop j       ) b' -> r)
+--     -> r
+-- play i j (fromSing->p) b f g = withSomeSing (place i j p b) $ \b' ->
+--     gameState b' (f b') (g b')
 
 -- TODO: can Play return a b' with a known `(Index b' row, Index row ('Just p))`?
 -- but do we need to?
