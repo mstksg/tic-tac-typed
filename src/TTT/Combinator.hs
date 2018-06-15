@@ -28,12 +28,15 @@ module TTT.Combinator (
   , Sel(..), selSing
   , overSel, mapIx_proof
   , setSel, setIx_proof
+  , listSel
+  , OutOfBounds
   ) where
 
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
+import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
 import           Data.Type.Index
@@ -188,3 +191,25 @@ setIx_proof = \case
       _ `SCons` _ -> SelZ
     SelS n -> \case
       _ `SCons` xs -> SelS $ setIx_proof n xs
+
+type OutOfBounds n (as :: [k]) = Refuted (Σ k (TyCon1 (Sel n as)))
+
+listSel
+    :: forall k n (as :: [k]). ()
+    => Sing n
+    -> Sing as
+    -> Decision (Σ k (TyCon1 (Sel n as)))
+listSel = \case
+    SZ -> \case
+      SNil -> Disproved $ \case
+        _ :&: s -> case s of {}
+      s `SCons` _ -> Proved $ s :&: SelZ
+    SS n -> \case
+      SNil -> Disproved $ \case
+        _ :&: s -> case s of {}
+      _ `SCons` xs -> case listSel n xs of
+        Proved (y :&: s) -> Proved (y :&: SelS s)
+        Disproved v -> Disproved $ \case
+          y :&: s -> case s of
+            SelS m -> v (y :&: m)
+

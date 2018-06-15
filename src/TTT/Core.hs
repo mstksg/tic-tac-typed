@@ -6,6 +6,7 @@
 {-# LANGUAGE KindSignatures        #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE PatternSynonyms       #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE RankNTypes            #-}
@@ -17,6 +18,7 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE ViewPatterns          #-}
+{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module TTT.Core (
     Piece(..), SPiece()
@@ -27,7 +29,7 @@ module TTT.Core (
   , emptyBoard, sEmptyBoard, EmptyBoard
   , Victory(..)
   , Full, BoardWon
-  , GameState(..), SomeGameState(..)
+  , GameState(..)
   , Pick(..), pick
   , play
   , PlaceBoard, sPlaceBoard, placeBoard
@@ -38,14 +40,13 @@ import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
+import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
-import           Data.Type.Conjunction
 import           Data.Type.Product
 import           Data.Type.Sum
-import           Prelude hiding                          (lines)
+import           Prelude hiding                  (lines)
 import           TTT.Combinator
-import           Type.Class.Higher
 import           Type.Family.Nat
 
 $(singletons [d|
@@ -73,8 +74,12 @@ $(singletons [d|
                ]
   |])
 
+-- (exists s. GameState ('MStop s) b)
+-- data StoppedGame :: [[Maybe Piece]] -> TyFun (Maybe Piece) Type -> Type
+-- type instance Apply (StoppedGame b) s = GameState ('MStop s) b
+
 data Victory :: [Maybe k] -> Type where
-    V :: Uniform ('Just a ': as) -> Victory ('Just a ': as)
+    V :: Sing a -> Uniform ('Just a ': as) -> Victory ('Just a ': as)
 
 data Winner :: k -> [Maybe k] -> Type where
     W :: Uniform ('Just a ': as) -> Winner a ('Just a ': as)
@@ -95,9 +100,9 @@ victory ss = case uniform ss of
     Proved u -> case ss of
       SNil               -> Disproved $ \case {}
       SNothing `SCons` _ -> Disproved $ \case {}
-      SJust _  `SCons` _ -> Proved $ V u
+      SJust x  `SCons` _ -> Proved $ V x u
     Disproved v -> Disproved $ \case
-      V u -> v u
+      V _ u -> v u
 
 boardWon
     :: forall k (b :: [[Maybe k]]). SDecide k
@@ -115,42 +120,22 @@ data GameState :: Mode -> [[Maybe Piece]] -> Type where
               -> Refuted (Full b)
               -> GameState ('MPlay p) b
 
-data SomeGameState :: Piece -> [[Maybe Piece]] -> Type where
-    SGSInPlay  :: GameState ('MPlay (AltP p)) b -> SomeGameState p b
-    SGSStopped :: GameState ('MStop s       ) b -> SomeGameState p b
+type StoppedGame b s = GameState ('MStop s) b
+genDefunSymbols [''StoppedGame]
 
 gameState
     :: forall b p. ()
     => Sing b
-    -> SomeGameState p b
+    -> Either (GameState ('MPlay p) b)
+              (Σ (Maybe Piece) (StoppedGameSym1 b))
 gameState b = case boardWon b of
-    Proved won -> withSum won $ \i (V v) ->
-      SGSStopped $ GSVictory (injectSum i (W v))
+    Proved won -> withSum won $ \i (V x v) ->
+      Right $ SJust x :&: GSVictory (injectSum i (W v))
     Disproved notwon -> case full b of
       Proved filled ->
-        SGSStopped $ GSCats notwon filled
+        Right $ SNothing :&: GSCats notwon filled
       Disproved notfilled ->
-        SGSInPlay $ GSInPlay notwon notfilled
-
-type OutOfBounds n as = Refuted (Some (Sing :&: Sel n as))
-
-listSel
-    :: Sing n
-    -> Sing as
-    -> Decision (Some (Sing :&: Sel n as))
-listSel = \case
-    SZ -> \case
-      SNil -> Disproved $ \case
-        Some (_ :&: s) -> case s of {}
-      s `SCons` _ -> Proved $ Some (s :&: SelZ)
-    SS n -> \case
-      SNil -> Disproved $ \case
-        Some (_ :&: s) -> case s of {}
-      _ `SCons` xs -> case listSel n xs of
-        Proved (Some (y :&: s)) -> Proved (Some (y :&: SelS s))
-        Disproved v -> Disproved $ \case
-          Some (y :&: s) -> case s of
-            SelS m -> v (Some (y :&: m))
+        Left $ GSInPlay notwon notfilled
 
 data Pick :: N -> N -> [[Maybe Piece]] -> Type where
     PickValid  :: Sel i b row     -> Sel j row 'Nothing  -> Pick i j b
@@ -164,8 +149,8 @@ pick
     -> Sing b
     -> Pick i j b
 pick i j b = case listSel i b of
-    Proved (Some (row :&: i')) -> case listSel j row of
-      Proved (Some (p :&: j')) -> case p of
+    Proved (row :&: i') -> case listSel j row of
+      Proved (p :&: j') -> case p of
         SJust q  -> PickPlayed i' j' q
         SNothing -> PickValid i' j'
       Disproved v -> PickOoBY i' v
@@ -196,7 +181,6 @@ play
     -> Sel j row 'Nothing
     -> Sing p
     -> Sing b
-    -> SomeGameState (AltP p) b'
-play i j p b = gameState @b' @(AltP p) b'
-  where
-    b' = placeSel i j p b
+    -> Either (GameState ('MPlay (AltP p)) b')
+              (Σ _ (StoppedGameSym1 b'))
+play i j p = gameState @b' @(AltP p) . placeSel i j p
