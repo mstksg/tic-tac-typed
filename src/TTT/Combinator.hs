@@ -20,6 +20,7 @@
 
 module TTT.Combinator (
     Uniform(..), uniform
+  , Refuted2, Decision2(..)
   , IsJust(..), isJust
   , decideAll, decideAny
   , withSum
@@ -78,11 +79,11 @@ uniform' x = go
           Disproved v -> Disproved $ \case US u -> v u
         Disproved v -> Disproved $ \case US _ -> v Refl
 
--- uni = \case
---     x `SCons` SNil -> Proved UZ
---     x `SCons` (_ `SCons` _) -> case uni
-    -- SNil -> Proved $ UZ
+type Refuted2 f = forall a. Sing a -> Refuted (f a)
 
+data Decision2 :: (k -> Type) -> Type where
+    Proved2    :: Sing a -> f a -> Decision2 f
+    Disproved2 :: Refuted2 f -> Decision2 f
 
 data IsJust :: Maybe k -> Type where
     IsJust :: IsJust ('Just a)
@@ -127,6 +128,30 @@ decideAny f = go
           Disproved vs -> Disproved $ \case
             InL p  -> v  p
             InR ps -> vs ps
+
+data Any2 :: (k -> j -> Type) -> [k] -> Type where
+    Any2L :: Decision2 (f a) -> Any2 f (a ': as)
+    Any2R :: Any2 f as -> Any2 f (a ': as)
+
+decideAny2
+    :: forall f as. ()
+    => (forall a. Sing a -> Decision2 (f a))
+    -> Sing as
+    -> Any2 f as
+decideAny2 f = go
+  where
+    go  :: Sing bs -> Any2 f as
+    go = \case
+      -- SNil -> 
+  --   go  = \case
+  --     SNil         -> Disproved $ \case {}
+  --     s `SCons` ss -> case f s of
+  --       Proved p    -> Proved $ InL p
+  --       Disproved v -> case go ss of
+  --         Proved ps    -> Proved $ InR ps
+  --         Disproved vs -> Disproved $ \case
+  --           InL p  -> v  p
+  --           InR ps -> vs ps
 
 withSum
     :: forall f as r. ()
@@ -259,3 +284,4 @@ setSel i x = fst . setSelWit i x
 data OutOfBounds :: N -> [k] -> Type where
     OoBZ :: OutOfBounds n '[]
     OoBS :: OutOfBounds n as -> OutOfBounds ('S n) (a ': as)
+
