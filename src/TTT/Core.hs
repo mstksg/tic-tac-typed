@@ -27,7 +27,7 @@ module TTT.Core (
   , emptyBoard, sEmptyBoard, EmptyBoard
   , Victory(..)
   , Full, BoardWon
-  , GameState(..), StoppedGame(..)
+  , GameState(..), SomeGameState(..)
   , Pick(..), pick
   , play
   , PlaceBoard, sPlaceBoard, placeBoard
@@ -115,23 +115,22 @@ data GameState :: Mode -> [[Maybe Piece]] -> Type where
               -> Refuted (Full b)
               -> GameState ('MPlay p) b
 
-data StoppedGame :: [[Maybe Piece]] -> Type where
-    SG :: GameState ('MStop s) b -> StoppedGame b
-
-type InPlayGame p = GameState ('MPlay (AltP p))
+data SomeGameState :: Piece -> [[Maybe Piece]] -> Type where
+    SGSInPlay  :: GameState ('MPlay (AltP p)) b -> SomeGameState p b
+    SGSStopped :: GameState ('MStop s       ) b -> SomeGameState p b
 
 gameState
     :: forall b p. ()
     => Sing b
-    -> Either (InPlayGame p b) (StoppedGame b)
+    -> SomeGameState p b
 gameState b = case boardWon b of
     Proved won -> withSum won $ \i (V v) ->
-      Right . SG $ GSVictory (injectSum i (W v))
+      SGSStopped $ GSVictory (injectSum i (W v))
     Disproved notwon -> case full b of
       Proved filled ->
-        Right . SG $ GSCats notwon filled
+        SGSStopped $ GSCats notwon filled
       Disproved notfilled ->
-        Left $ GSInPlay notwon notfilled
+        SGSInPlay $ GSInPlay notwon notfilled
 
 type OutOfBounds n as = Refuted (Some (Sing :&: Sel n as))
 
@@ -197,7 +196,7 @@ play
     -> Sel j row 'Nothing
     -> Sing p
     -> Sing b
-    -> Either (InPlayGame (AltP p) b') (StoppedGame b')
+    -> SomeGameState (AltP p) b'
 play i j p b = gameState @b' @(AltP p) b'
   where
     b' = placeSel i j p b
