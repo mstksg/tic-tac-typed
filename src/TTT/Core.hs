@@ -27,8 +27,7 @@ module TTT.Core (
   , altP, AltP, sAltP
   , lines, Lines, sLines
   , emptyBoard, sEmptyBoard, EmptyBoard
-  , Victory(..)
-  , Full, BoardWon
+  , Victory, Full, BoardWon
   , GameState(..)
   , Pick(..), pick
   , play
@@ -74,12 +73,7 @@ $(singletons [d|
                ]
   |])
 
--- (exists s. GameState ('MStop s) b)
--- data StoppedGame :: [[Maybe Piece]] -> TyFun (Maybe Piece) Type -> Type
--- type instance Apply (StoppedGame b) s = GameState ('MStop s) b
-
-data Victory :: [Maybe k] -> Type where
-    V :: Sing a -> Uniform ('Just a ': as) -> Victory ('Just a ': as)
+type Victory = Σ2 Piece (TyCon2 Winner)
 
 data Winner :: k -> [Maybe k] -> Type where
     W :: Uniform ('Just a ': as) -> Winner a ('Just a ': as)
@@ -92,22 +86,18 @@ full
     -> Decision (Full b)
 full = decideAll (decideAll isJust)
 
-victory
-    :: forall k (as :: [Maybe k]). SDecide k
-    => Sing as
-    -> Decision (Victory as)
+victory :: Sing as -> Decision (Victory as)
 victory ss = case uniform ss of
     Proved u -> case ss of
-      SNil               -> Disproved $ \case {}
-      SNothing `SCons` _ -> Disproved $ \case {}
-      SJust x  `SCons` _ -> Proved $ V x u
+      SNil               -> Disproved $ \case
+        _ :&&: w -> case w of {}
+      SNothing `SCons` _ -> Disproved $ \case
+        _ :&&: w -> case w of {}
+      SJust x  `SCons` _ -> Proved $ x :&&: W u
     Disproved v -> Disproved $ \case
-      V _ u -> v u
+      _ :&&: W u -> v u
 
-boardWon
-    :: forall k (b :: [[Maybe k]]). SDecide k
-    => Sing b
-    -> Decision (BoardWon b)
+boardWon :: Sing b -> Decision (BoardWon b)
 boardWon = decideAny victory . sLines
 
 data GameState :: Mode -> [[Maybe Piece]] -> Type where
@@ -129,8 +119,8 @@ gameState
     -> Either (GameState ('MPlay p) b)
               (Σ (Maybe Piece) (StoppedGameSym1 b))
 gameState b = case boardWon b of
-    Proved won -> withSum won $ \i (V x v) ->
-      Right $ SJust x :&: GSVictory (injectSum i (W v))
+    Proved won -> withSum won $ \i (x :&&: w) ->
+      Right $ SJust x :&: GSVictory (injectSum i w)
     Disproved notwon -> case full b of
       Proved filled ->
         Right $ SNothing :&: GSCats notwon filled

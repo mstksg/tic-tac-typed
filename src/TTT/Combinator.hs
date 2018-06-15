@@ -30,6 +30,7 @@ module TTT.Combinator (
   , setSel, setIx_proof
   , listSel
   , OutOfBounds
+  , Sigma2(..), Σ2
   ) where
 
 import           Data.Kind
@@ -212,4 +213,8 @@ listSel = \case
         Disproved v -> Disproved $ \case
           y :&: s -> case s of
             SelS m -> v (y :&: m)
+
+data Sigma2 k :: (k ~> j ~> Type) -> j -> Type where
+    (:&&:) :: Sing (a :: k) -> (p @@ a @@ b) -> Sigma2 k p b
+type Σ2 (k :: Type) (t :: k ~> j ~> Type) = Sigma2 k t
 
