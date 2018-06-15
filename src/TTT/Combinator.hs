@@ -29,18 +29,18 @@ module TTT.Combinator (
   , setIx, sSetIx, SetIx, SetIxSym0, SetIxSym1, SetIxSym2, SetIxSym3
   , nIndex
   , Sel(..), selSing
-  , overSel, overSelWit
-  , setSel, setSelWit
-  , OutOfBounds(..)
+  , overSel, mapIx_proof
+  , setSel, setIx_proof
+  -- , OutOfBounds(..)
   ) where
 
+-- import           Data.Singletons.Prelude.List hiding  (Sum)
+-- import           Data.Singletons.Prelude.Maybe hiding (IsJust)
 import           Data.Dependent.Sum
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
-import           Data.Singletons.Prelude.List hiding  (Sum)
-import           Data.Singletons.Prelude.Maybe hiding (IsJust)
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
 import           Data.Type.Index
@@ -213,40 +213,28 @@ $(singletons [d|
 --     SelS n -> \f -> \case
 --       x `SCons` xs -> SelS (overSel n f xs)
 
-overSelWit
-    :: forall k n (as :: [k]) (a :: k) (f :: k ~> k). ()
-    => Sel n as a
-    -> Sing f
-    -> Sing as
-    -> (Sing (MapIx n f as), Sel n (MapIx n f as) (f @@ a))
-overSelWit = \case
-    SelZ -> \(SLambda f) -> \case
-      x `SCons` xs -> (f x `SCons` xs, SelZ)
-    SelS n -> \f -> \case
-      x `SCons` xs -> case overSelWit n f xs of
-        (xs', n') -> (x `SCons` xs', SelS n')
-
-
 overSel
     :: forall k n (as :: [k]) (a :: k) (f :: k ~> k). ()
     => Sel n as a
     -> Sing f
     -> Sing as
     -> Sing (MapIx n f as)
-overSel i f = fst . overSelWit i f
+overSel = \case
+    SelZ -> \(SLambda f) -> \case
+      x `SCons` xs -> f x `SCons` xs
+    SelS n -> \f -> \case
+      x `SCons` xs -> x `SCons` overSel n f xs
 
-setSelWit
-    :: forall k n (as :: [k]) (a :: k) (b :: k). ()
+mapIx_proof
+    :: forall n as a f. ()
     => Sel n as a
-    -> Sing b
     -> Sing as
-    -> (Sing (SetIx n b as), Sel n (SetIx n b as) b)
-setSelWit = \case
-    SelZ -> \y -> \case
-      x `SCons` xs -> (y `SCons` xs, SelZ)
-    SelS n -> \y -> \case
-      x `SCons` xs -> case setSelWit n y xs of
-        (xs', n') -> (x `SCons` xs', SelS n')
+    -> Sel n (MapIx n f as) (f @@ a)
+mapIx_proof = \case
+    SelZ -> \case
+      _ `SCons` _  -> SelZ
+    SelS n -> \case
+      _ `SCons` xs -> SelS $ mapIx_proof @_ @_ @_ @f n xs
 
 setSel
     :: forall k n (as :: [k]) (a :: k) (b :: k). ()
@@ -254,8 +242,18 @@ setSel
     -> Sing b
     -> Sing as
     -> Sing (SetIx n b as)
-setSel i x = fst . setSelWit i x
+setSel = \case
+    SelZ -> \y -> \case
+      _ `SCons` xs -> y `SCons` xs
+    SelS n -> \y -> \case
+      x `SCons` xs -> x `SCons` setSel n y xs
 
-data OutOfBounds :: N -> [k] -> Type where
-    OoBZ :: OutOfBounds n '[]
-    OoBS :: OutOfBounds n as -> OutOfBounds ('S n) (a ': as)
+setIx_proof
+    :: Sel n as a
+    -> Sing as
+    -> Sel n (SetIx n b as) b
+setIx_proof = \case
+    SelZ -> \case
+      _ `SCons` _ -> SelZ
+    SelS n -> \case
+      _ `SCons` xs -> SelS $ setIx_proof n xs

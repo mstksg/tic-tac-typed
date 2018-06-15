@@ -28,26 +28,24 @@ module TTT.Core (
   , Victory(..)
   , Full, BoardWon
   , GameState(..)
-  -- , Pick(..), pick
+  , Pick(..), pick
   , play
-  , PlaceBoard
+  , PlaceBoard, sPlaceBoard, placeBoard
   , placeSel
   ) where
 
-import           Data.Dependent.Sum
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
-import           Data.Singletons.Prelude.List hiding  (Sum)
-import           Data.Singletons.Prelude.Maybe hiding (IsJust)
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
-import           Data.Type.Index
+import           Data.Type.Conjunction
 import           Data.Type.Product
 import           Data.Type.Sum
-import           Prelude hiding                       (lines)
+import           Prelude hiding                          (lines)
 import           TTT.Combinator
+import           Type.Class.Higher
 import           Type.Family.Nat
 
 $(singletons [d|
@@ -131,28 +129,44 @@ gameState b f g = case boardWon b of
       Disproved notfilled ->
         f $ GSInPlay notwon notfilled
 
+type OutOfBounds n as = Refuted (Some (Sing :&: Sel n as))
+
+listSel
+    :: Sing n
+    -> Sing as
+    -> Decision (Some (Sing :&: Sel n as))
+listSel = \case
+    SZ -> \case
+      SNil -> Disproved $ \case
+        Some (_ :&: s) -> case s of {}
+      s `SCons` _ -> Proved $ Some (s :&: SelZ)
+    SS n -> \case
+      SNil -> Disproved $ \case
+        Some (_ :&: s) -> case s of {}
+      _ `SCons` xs -> case listSel n xs of
+        Proved (Some (y :&: s)) -> Proved (Some (y :&: SelS s))
+        Disproved v -> Disproved $ \case
+          Some (y :&: s) -> case s of
+            SelS m -> v (Some (y :&: m))
+
 data Pick :: N -> N -> [[Maybe Piece]] -> Type where
-    PickValid  :: Sel i b row -> Sel j row 'Nothing  -> Pick i j b
-    PickPlayed :: Sel i b row -> Sel j row ('Just p) -> Pick i j b
+    PickValid  :: Sel i b row     -> Sel j row 'Nothing  -> Pick i j b
+    PickPlayed :: Sel i b row     -> Sel j row ('Just p) -> Sing p -> Pick i j b
+    PickOoBX   :: OutOfBounds i b ->                        Pick i j b
+    PickOoBY   :: Sel i b row     -> OutOfBounds j row   -> Pick i j b
 
--- data Pick :: [[Maybe Piece]] -> Type where
---     PickValid  :: Index b row -> Index row 'Nothing  -> Pick b
---     PickPlayed :: Index b row -> Index row ('Just p) -> Pick b
---     PickOoBX   :: N           -> N -> Pick b
---     PickOoBY   :: Index b row -> N -> Pick b
-
--- pick
---     :: N
---     -> N
---     -> Sing b
---     -> Pick b
--- pick i j b = case nIndex i b of
---     Nothing           -> PickOoBX i j
---     Just (row :=> i') -> case nIndex j row of
---       Nothing -> PickOoBY i' j
---       Just (p :=> j') -> case p of
---         SNothing -> PickValid  i' j'
---         SJust _  -> PickPlayed i' j'
+pick
+    :: Sing i
+    -> Sing j
+    -> Sing b
+    -> Pick i j b
+pick i j b = case listSel i b of
+    Proved (Some (row :&: i')) -> case listSel j row of
+      Proved (Some (p :&: j')) -> case p of
+        SJust q  -> PickPlayed i' j' q
+        SNothing -> PickValid i' j'
+      Disproved v -> PickOoBY i' v
+    Disproved v -> PickOoBX v
 
 $(singletons [d|
   placeBoard :: N -> N -> Piece -> [[Maybe Piece]] -> [[Maybe Piece]]
@@ -185,18 +199,3 @@ play
 play i j p b f g = gameState b' (f b') (g b')
   where
     b' = placeSel i j p b
-
--- play
---     :: forall (b :: [[Maybe Piece]]) row p r. ()
---     => Index b row
---     -> Index row 'Nothing
---     -> Sing p
---     -> Sing b
---     -> (forall b'  . Sing b' -> GameState ('MPlay (AltP p)) b' -> r)
---     -> (forall b' j. Sing b' -> GameState ('MStop j       ) b' -> r)
---     -> r
--- play i j (fromSing->p) b f g = withSomeSing (place i j p b) $ \b' ->
---     gameState b' (f b') (g b')
-
--- TODO: can Play return a b' with a known `(Index b' row, Index row ('Just p))`?
--- but do we need to?
