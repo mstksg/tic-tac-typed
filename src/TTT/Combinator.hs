@@ -129,20 +129,24 @@ decideAny f = go
             InL p  -> v  p
             InR ps -> vs ps
 
-data Any2 :: (k -> j -> Type) -> [k] -> Type where
-    Any2L :: Decision2 (f a) -> Any2 f (a ': as)
-    Any2R :: Any2 f as -> Any2 f (a ': as)
+data ReSum :: (j -> k -> Type) -> [k] -> j -> Type where
+    ReSum :: Sum (f b) as -> ReSum f as b
 
 decideAny2
-    :: forall f as. ()
-    => (forall a. Sing a -> Decision2 (f a))
+    :: forall k f (as :: [k]). ()
+    => (forall (a :: k). Sing a -> Decision2 (f a))
     -> Sing as
-    -> Any2 f as
+    -> Decision2 (ReSum f as)
 decideAny2 f = go
   where
-    go  :: Sing bs -> Any2 f as
+    go  :: Sing bs -> Decision2 (ReSum f bs)
     go = \case
-      -- SNil -> 
+      SNil -> Disproved2 $ \_ -> \case
+        ReSum sm -> case sm of {}
+      x `SCons` xs -> case f x of
+        Proved2 s p -> Proved2 x $ ReSum (InL _)
+    -- go = \case
+    --   SNil -> Disp
   --   go  = \case
   --     SNil         -> Disproved $ \case {}
   --     s `SCons` ss -> case f s of
