@@ -23,20 +23,13 @@ module TTT.Combinator (
   , IsJust(..), isJust
   , decideAll, decideAny
   , withSum
-  , ixSing
-  , indexN
   , mapIx, sMapIx, MapIx, MapIxSym0, MapIxSym1, MapIxSym2, MapIxSym3
   , setIx, sSetIx, SetIx, SetIxSym0, SetIxSym1, SetIxSym2, SetIxSym3
-  , nIndex
   , Sel(..), selSing
   , overSel, mapIx_proof
   , setSel, setIx_proof
-  -- , OutOfBounds(..)
   ) where
 
--- import           Data.Singletons.Prelude.List hiding  (Sum)
--- import           Data.Singletons.Prelude.Maybe hiding (IsJust)
-import           Data.Dependent.Sum
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
@@ -77,12 +70,6 @@ uniform' x = go
           Proved u    -> Proved (US u)
           Disproved v -> Disproved $ \case US u -> v u
         Disproved v -> Disproved $ \case US _ -> v Refl
-
--- uni = \case
---     x `SCons` SNil -> Proved UZ
---     x `SCons` (_ `SCons` _) -> case uni
-    -- SNil -> Proved $ UZ
-
 
 data IsJust :: Maybe k -> Type where
     IsJust :: IsJust ('Just a)
@@ -137,38 +124,6 @@ withSum = \case
     InL x  -> \f -> f IZ x
     InR xs -> \f -> withSum xs (f . IS)
 
-ixSing
-    :: Index as a
-    -> Sing as
-    -> Sing a
-ixSing = \case
-   IZ -> \case
-     s `SCons` _ -> s
-   IS i -> \case
-     _ `SCons` ss -> ixSing i ss
-
-indexN
-    :: Index as a
-    -> N
-indexN = \case
-    IZ   -> Z
-    IS i -> S $ indexN i
-
-nIndex
-    :: forall k (as :: [k]). ()
-    => N
-    -> Sing as
-    -> Maybe (DSum Sing (Index as))
-nIndex = \case
-    Z -> \case
-      SNil -> Nothing
-      s `SCons` _ -> Just $ s :=> IZ
-    S i -> \case
-      SNil -> Nothing
-      _ `SCons` ss -> case nIndex i ss of
-        Just (s :=> j) -> Just (s :=> IS j)
-        Nothing        -> Nothing
-
 data Sel :: N -> [k] -> k -> Type where
     SelZ :: Sel 'Z (a ': as) a
     SelS :: Sel n as a -> Sel ('S n) (b ': as) a
@@ -188,30 +143,6 @@ $(singletons [d|
   setIx :: N -> a -> [a] -> [a]
   setIx i x = mapIx i (const x)
   |])
-
--- overSel
---     :: forall k n (as :: [k]) (a :: k) (f :: k ~> k). ()
---     => Sel n as a
---     -> Sing f
---     -> Sing as
---     -> Sing (MapIx n f as)
--- overSel = \case
---     SelZ -> \f -> \case
---       x `SCons` xs -> (f @@ x) `SCons` xs
---     SelS n -> \f -> \case
---       x `SCons` xs -> x `SCons` overSel n f xs
-
--- overSel
---     :: forall k n (as :: [k]) (a :: k) (f :: k ~> k). ()
---     => Sel n as a
---     -> Sing f
---     -> Sing as
---     -> Sel n (MapIx n f as) (f @@ a)
--- overSel = \case
---     SelZ -> \f -> \case
---       x `SCons` xs -> SelZ
---     SelS n -> \f -> \case
---       x `SCons` xs -> SelS (overSel n f xs)
 
 overSel
     :: forall k n (as :: [k]) (a :: k) (f :: k ~> k). ()
