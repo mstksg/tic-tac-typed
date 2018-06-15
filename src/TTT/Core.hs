@@ -39,7 +39,7 @@ module TTT.Core (
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
-import           Data.Singletons.Prelude
+import           Data.Singletons.Prelude hiding  (Any)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
@@ -74,35 +74,37 @@ $(singletons [d|
                ]
   |])
 
-type Victory = Σ2 Piece (TyCon2 Winner)
-
 data Winner :: k -> [Maybe k] -> Type where
     W :: Uniform ('Just a ': as) -> Winner a ('Just a ': as)
 
+type Victory b = Σ Piece (FlipSym2 (TyCon2 Winner) b)
+genDefunSymbols [''Victory]
+
 type Full       = Prod (Prod IsJust)
-type BoardWon b = Sum Victory (Lines b)
+type BoardWon b = Any VictorySym0 (Lines b)
 
 full
     :: Sing b
     -> Decision (Full b)
 full = decideAll (decideAll isJust)
 
+
 victory :: Sing as -> Decision (Victory as)
 victory ss = case uniform ss of
     Proved u -> case ss of
       SNil               -> Disproved $ \case
-        _ :&&: w -> case w of {}
+        _ :&: w -> case w of {}
       SNothing `SCons` _ -> Disproved $ \case
-        _ :&&: w -> case w of {}
-      SJust x  `SCons` _ -> Proved $ x :&&: W u
+        _ :&: w -> case w of {}
+      SJust x  `SCons` _ -> Proved $ x :&: W u
     Disproved v -> Disproved $ \case
-      _ :&&: W u -> v u
+      _ :&: W u -> v u
 
 boardWon :: Sing b -> Decision (BoardWon b)
 boardWon = decideAny victory . sLines
 
 data GameState :: Mode -> [[Maybe Piece]] -> Type where
-    GSVictory :: Sum (Winner p) (Lines b)
+    GSVictory :: Any (TyCon1 (Winner p)) (Lines b)
               -> GameState ('MStop ('Just p)) b
     GSCats    :: Refuted (BoardWon b)
               -> Full b
@@ -120,8 +122,8 @@ gameState
     -> Either (GameState ('MPlay p) b)
               (Σ _ (StoppedGameSym1 b))
 gameState b = case boardWon b of
-    Proved won -> withSum won $ \i (x :&&: w) ->
-      Right $ SJust x :&: GSVictory (injectSum i w)
+    Proved (Any i (x :&: w)) ->
+      Right $ SJust x :&: GSVictory (Any i w)
     Disproved notwon -> case full b of
       Proved filled ->
         Right $ SNothing :&: GSCats notwon filled

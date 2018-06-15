@@ -21,6 +21,7 @@
 module TTT.Combinator (
     Uniform(..), uniform
   , IsJust(..), isJust
+  , Any(..)
   , decideAll, decideAny
   , withSum
   , mapIx, sMapIx, MapIx, MapIxSym0, MapIxSym1, MapIxSym2, MapIxSym3
@@ -30,13 +31,12 @@ module TTT.Combinator (
   , setSel, setIx_proof
   , listSel
   , OutOfBounds
-  , Sigma2(..), Σ2
   ) where
 
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
-import           Data.Singletons.Prelude
+import           Data.Singletons.Prelude hiding (Any)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
@@ -101,23 +101,30 @@ decideAll f = go
         Disproved v -> Disproved $ \case
             p :< _ -> v p
 
+data Any :: (k ~> Type) -> [k] -> Type where
+    Any :: Index as a -> f @@ a -> Any f as
+
 decideAny
     :: forall f as. ()
-    => (forall a. Sing a -> Decision (f a))
+    => (forall a. Sing a -> Decision (f @@ a))
     -> Sing as
-    -> Decision (Sum f as)
+    -> Decision (Any f as)
 decideAny f = go
   where
-    go  :: Sing bs -> Decision (Sum f bs)
+    go  :: Sing bs -> Decision (Any f bs)
     go  = \case
-      SNil         -> Disproved $ \case {}
+      SNil         -> Disproved $ \case
+        Any i _ -> case i of {}
       s `SCons` ss -> case f s of
-        Proved p    -> Proved $ InL p
+        Proved p    -> Proved $ Any IZ p
         Disproved v -> case go ss of
-          Proved ps    -> Proved $ InR ps
-          Disproved vs -> Disproved $ \case
-            InL p  -> v  p
-            InR ps -> vs ps
+          Proved (Any i p) -> Proved $ Any (IS i) p
+          Disproved v'     -> Disproved $ \case
+            Any i p -> case i of
+              IZ    -> v  p
+              IS i' -> v' (Any i' p)
+            -- AnyL p  -> v  p
+            -- AnyR ps -> vs ps
 
 withSum
     :: forall f as r. ()
@@ -213,8 +220,4 @@ listSel = \case
         Disproved v -> Disproved $ \case
           y :&: s -> case s of
             SelS m -> v (y :&: m)
-
-data Sigma2 k :: (k ~> j ~> Type) -> j -> Type where
-    (:&&:) :: Sing (a :: k) -> (p @@ a @@ b) -> Sigma2 k p b
-type Σ2 (k :: Type) (t :: k ~> j ~> Type) = Sigma2 k t
 
