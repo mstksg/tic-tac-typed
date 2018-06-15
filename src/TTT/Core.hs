@@ -29,6 +29,7 @@ module TTT.Core (
   , emptyBoard, sEmptyBoard, EmptyBoard
   , Victory, Full, BoardWon
   , GameState(..)
+  , StoppedGame, StoppedGameSym0, StoppedGameSym1, StoppedGameSym2
   , Pick(..), pick
   , play
   , PlaceBoard, sPlaceBoard, placeBoard
@@ -117,7 +118,7 @@ gameState
     :: forall b p. ()
     => Sing b
     -> Either (GameState ('MPlay p) b)
-              (Σ (Maybe Piece) (StoppedGameSym1 b))
+              (Σ _ (StoppedGameSym1 b))
 gameState b = case boardWon b of
     Proved won -> withSum won $ \i (x :&&: w) ->
       Right $ SJust x :&: GSVictory (injectSum i w)
