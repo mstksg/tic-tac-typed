@@ -27,12 +27,15 @@ dependencies:
 - base >= 4.7 && < 5
 - singletons
 - type-combinators
-- type-combinators-singletons
+- containers
+- transformers
 
 library:
   source-dirs: src
-  exposed-modules:
-  - TTT.Core
+  dependencies:
+  - type-combinators-singletons
+  - mwc-random
+  - primitive
 
 executables:
   tic-tac-typed-console:
@@ -40,8 +43,6 @@ executables:
     source-dirs:         app
     dependencies:
     - tic-tac-typed
-    - containers
-    - transformers
     ghc-options:
     - -threaded
     - -rtsopts

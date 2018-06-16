@@ -25,22 +25,22 @@
 module TTT.Core (
     Piece(..), SPiece()
   , GameOver(..), SGameOver
+  , Board, BoardSym0
   , Sing(SPX, SPO, SGOWin, SGOCats)
   , altP, AltP, sAltP
   , lines, Lines, sLines
-  , Board, BoardSym0
-  , emptyBoard, sEmptyBoard, EmptyBoard
-  , Pick(..), pick
-  , PlaceBoard, sPlaceBoard, placeBoard
-  , play
-  , GameState(..), Update(..)
+  , emptyBoard, EmptyBoard, sEmptyBoard
+  , placeBoard, PlaceBoard, sPlaceBoard
   , boardOver, BoardOver, sBoardOver
+  , Pick(..), pick
   , InPlay(..)
+  , StateInPlay, StateInPlaySym0, StateInPlaySym1, StateInPlaySym2
+  , GameState(..), Update(..), Coord(..)
+  , play
   ) where
 
 import           Data.Kind
 import           Data.List hiding                (lines)
-import           Data.Singletons
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
 import           Data.Singletons.Prelude.List
@@ -55,12 +55,12 @@ $(singletons [d|
   data Piece = PX | PO
     deriving (Show, Eq)
 
+  data GameOver = GOCats
+                | GOWin Piece
+
   altP :: Piece -> Piece
   altP PX = PO
   altP PO = PX
-
-  data GameOver = GOCats
-                | GOWin Piece
 
   diagonal :: [[a]] -> [a]
   diagonal []          = []
@@ -79,28 +79,7 @@ $(singletons [d|
                , [Nothing, Nothing, Nothing]
                , [Nothing, Nothing, Nothing]
                ]
-  |])
 
-data Pick :: N -> N -> Board -> Type where
-    PickValid  :: Sel i b row     -> Sel j row 'Nothing  -> Pick i j b
-    PickPlayed :: Sel i b row     -> Sel j row ('Just p) -> Sing p -> Pick i j b
-    PickOoBX   :: OutOfBounds i b ->                        Pick i j b
-    PickOoBY   :: Sel i b row     -> OutOfBounds j row   -> Pick i j b
-
-pick
-    :: Sing i
-    -> Sing j
-    -> Sing b
-    -> Pick i j b
-pick i j b = case listSel i b of
-    Proved (row :&: i') -> case listSel j row of
-      Proved (p :&: j') -> case p of
-        SJust q  -> PickPlayed i' j' q
-        SNothing -> PickValid i' j'
-      Disproved v -> PickOoBY i' v
-    Disproved v -> PickOoBX v
-
-$(singletons [d|
   placeBoard :: N -> N -> Piece -> Board -> Board
   placeBoard Z     j p (x:xs) = setIx j (Just p) x : xs
   placeBoard (S n) j p (x:xs) =                  x : placeBoard n j p xs
@@ -132,22 +111,48 @@ $(singletons [d|
                   else Nothing
   |])
 
+data Pick :: N -> N -> Board -> Type where
+    PickValid  :: Sel i b row     -> Sel j row 'Nothing  -> Pick i j b
+    PickPlayed :: Sel i b row     -> Sel j row ('Just p) -> Sing p -> Pick i j b
+    PickOoBX   :: OutOfBounds i b ->                        Pick i j b
+    PickOoBY   :: Sel i b row     -> OutOfBounds j row   -> Pick i j b
+
+pick
+    :: Sing i
+    -> Sing j
+    -> Sing b
+    -> Pick i j b
+pick i j b = case listSel i b of
+    Proved (row :&: i') -> case listSel j row of
+      Proved (p :&: j') -> case p of
+        SJust q  -> PickPlayed i' j' q
+        SNothing -> PickValid i' j'
+      Disproved v -> PickOoBY i' v
+    Disproved v -> PickOoBX v
+
 data InPlay :: Board -> Type where
     InPlay :: (BoardOver b ~ 'Nothing) => InPlay b
 
-data Update :: N -> N -> Piece -> Board -> Board -> Type where
-    Update :: Sel i b   row
-           -> Sel j row 'Nothing
+data Coord :: Board -> Maybe Piece -> (N, N) -> Type where
+    Coord :: Sel i b   row
+          -> Sel j row p
+          -> Coord b p '(i, j)
+
+data Update :: (N, N) -> Piece -> Board -> Board -> Type where
+    Update :: Coord b 'Nothing '(i, j)
            -> Sing p
-           -> Update i j p b (PlaceBoard i j p b)
+           -> Update '(i, j) p b (PlaceBoard i j p b)
 
 -- | Last played, and current board
 data GameState :: Piece -> Board -> Type where
     GSStart  :: GameState p EmptyBoard
     GSUpdate :: InPlay b1
-             -> Update i j p        b1 b2
-             -> GameState    p        b1
-             -> GameState    (AltP p)    b2
+             -> Update ij p        b1 b2
+             -> GameState p        b1
+             -> GameState (AltP p)    b2
+
+type StateInPlay p b = (GameState p b, InPlay b)
+genDefunSymbols [''StateInPlay]
 
 play
     :: forall b i j row p. ()
@@ -157,5 +162,5 @@ play
     -> Sing p
     -> GameState p b
     -> GameState (AltP p) (PlaceBoard i j p b)
-play r i j p = GSUpdate r (Update i j p)
+play r i j p = GSUpdate r (Update (Coord i j) p)
 

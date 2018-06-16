@@ -28,6 +28,7 @@ module TTT.Combinator (
   , OutOfBounds
   ) where
 
+-- import           Data.Type.Fin
 -- import           Data.Type.Index
 -- import           Data.Type.Product
 import           Data.Kind
@@ -216,3 +217,19 @@ listSel = \case
           y :&: s -> case s of
             SelS m -> v (y :&: m)
 
+-- $(singletons [d|
+--   lenNat :: [a] -> N
+--   lenNat []     = Z
+--   lenNat (_:xs) = S (lenNat xs)
+--   |])
+
+-- finsSing :: Sing n
+--       -> [Fin n]
+-- finsSing = \case
+--     SZ   -> []
+--     SS n -> FZ : map FS (finsSing n)
+
+-- deFin :: Fin n -> N
+-- deFin = \case
+--     FZ   -> Z
+--     FS i -> S (deFin i)

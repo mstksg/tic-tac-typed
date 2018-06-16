@@ -12,14 +12,12 @@
 {-# LANGUAGE TypeOperators          #-}
 
 import           Control.Monad
-import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Except
 import           Data.Char
 import           Data.List
 import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
-import           Data.Singletons.TH
 import           TTT.Core
 import           Type.Family.Nat
 import qualified Data.Map                   as M
@@ -28,14 +26,11 @@ data MoveError = MEPlaced
                | MEOutOfBounds
   deriving Show
 
-type InPlayLog p b = (GameState p b, InPlay b)
-genDefunSymbols [''InPlayLog]
-
 makeMove
     :: N
     -> N
     -> Sing p
-    -> Σ Board (InPlayLogSym1 p)
+    -> Σ Board (StateInPlaySym1 p)
     -> Either MoveError (Σ Board (TyCon (GameState (AltP p))))
 makeMove (FromSing i) (FromSing j) p (b :&: (g, r)) = case pick i j b of
     PickValid i' j' -> Right $ sPlaceBoard i j p b
@@ -56,7 +51,7 @@ type EndoM m a = a -> m a
 
 runGame
     :: EndoM (ExceptT GameOver IO)
-             (Σ (Piece, Board) (UncurrySym1 InPlayLogSym0))
+             (Σ (Piece, Board) (UncurrySym1 StateInPlaySym0))
 runGame s0@(STuple2 p b :&: (g, r)) = ExceptT $ do
     putStrLn $ displayBoard (FromSing b)
     putStrLn $ "Move for " ++ show (FromSing p)
