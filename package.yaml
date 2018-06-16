@@ -29,12 +29,12 @@ dependencies:
 - type-combinators
 - containers
 - transformers
+- mwc-random
 
 library:
   source-dirs: src
   dependencies:
   - type-combinators-singletons
-  - mwc-random
   - primitive
 
 executables:

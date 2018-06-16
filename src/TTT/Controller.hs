@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds       #-}
 {-# LANGUAGE GADTs           #-}
 {-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE PolyKinds       #-}
 {-# LANGUAGE RankNTypes      #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
@@ -26,7 +27,7 @@ import qualified System.Random.MWC          as MWC
 
 type Move b = Σ (N, N) (TyCon (Coord b 'Nothing))
 
-type Controller m (p :: Piece) = forall b. Sing b -> m (Maybe (Move b))
+type Controller m (p :: Piece) = forall b. Sing p -> Sing b -> m (Maybe (Move b))
 
 validMoves :: Sing b -> M.Map (N, N) (Move b)
 validMoves b = M.fromList $ do
@@ -41,7 +42,7 @@ priController
     :: Applicative m
     => [(N, N)]
     -> Controller m p
-priController xs b = pure $ asum (map (uncurry (go b)) xs)
+priController xs _ b = pure $ asum (map (uncurry (go b)) xs)
   where
     go :: Sing b -> N -> N -> Maybe (Σ (N, N) (TyCon (Coord b 'Nothing)))
     go b' (FromSing i) (FromSing j) = case pick i j b' of
@@ -51,7 +52,7 @@ priController xs b = pure $ asum (map (uncurry (go b)) xs)
 randController
     :: PrimMonad m
     => Controller (ReaderT (MWC.Gen (PrimState m)) m) p
-randController b
+randController _ b
     | M.null vm = pure Nothing
     | otherwise = do
         i <- MWC.uniformR (0, M.size vm - 1) =<< ask

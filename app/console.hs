@@ -1,8 +1,10 @@
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE KindSignatures         #-}
+{-# LANGUAGE LambdaCase             #-}
 {-# LANGUAGE PartialTypeSignatures  #-}
 {-# LANGUAGE PolyKinds              #-}
+{-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
 {-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeApplications       #-}
@@ -12,85 +14,71 @@
 {-# LANGUAGE TypeOperators          #-}
 
 import           Control.Monad
+import           Control.Monad.IO.Class
+import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Except
+import           Control.Monad.Trans.Reader
 import           Data.Char
 import           Data.List
 import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
+import           TTT.Controller
+import           TTT.Controller.Console
 import           TTT.Core
 import           Type.Family.Nat
 import qualified Data.Map                   as M
+import qualified System.Random.MWC          as MWC
 
-data MoveError = MEPlaced
-               | MEOutOfBounds
-  deriving Show
+playerX :: Controller IO 'PX
+playerX = consoleController
 
-makeMove
-    :: N
-    -> N
-    -> Sing p
-    -> Σ Board (StateInPlaySym1 p)
-    -> Either MoveError (Σ Board (TyCon (GameState (AltP p))))
-makeMove (FromSing i) (FromSing j) p (b :&: (g, r)) = case pick i j b of
-    PickValid i' j' -> Right $ sPlaceBoard i j p b
-                           :&: play r i' j' p g
-    PickPlayed{}    -> Left MEPlaced
-    PickOoBX{}      -> Left MEOutOfBounds
-    PickOoBY{}      -> Left MEOutOfBounds
+playerY :: MWC.GenIO -> Controller IO 'PO
+playerY g p = flip runReaderT g . randController p
+
+runner :: MWC.GenIO
+       -> EndoM (ExceptT (Either Piece GameOver) IO)
+                (Σ (Piece, Board) (UncurrySym1 StateInPlaySym0))
+runner g = runGame playerX (playerY g)
 
 main :: IO ()
-main = do
-    Left s <- runExceptT . foldr (>=>) pure (repeat runGame) $
-         STuple2 sing sing :&: (GSStart @'PX, InPlay)
+main = MWC.withSystemRandom $ \g -> do
+    Left s <- runExceptT . foldr (>=>) pure (repeat (runner g)) $
+       STuple2 sing sing :&: (GSStart @'PX, InPlay)
     putStrLn $ case s of
-      GOCats  -> "Cat's game :("
-      GOWin w -> "Winner: " ++ show w
+      Left p          -> "Forfeit by " ++ show p
+      Right GOCats    -> "Cat's game :("
+      Right (GOWin w) -> "Winner: " ++ show w
 
 type EndoM m a = a -> m a
 
 runGame
-    :: EndoM (ExceptT GameOver IO)
+    :: Monad m
+    => Controller m 'PX
+    -> Controller m 'PO
+    -> EndoM (ExceptT (Either Piece GameOver) m)
              (Σ (Piece, Board) (UncurrySym1 StateInPlaySym0))
-runGame s0@(STuple2 p b :&: (g, r)) = ExceptT $ do
-    putStrLn $ displayBoard (FromSing b)
-    putStrLn $ "Move for " ++ show (FromSing p)
-    c <- parseCoord <$> getLine
-    case c of
-      Nothing -> do
-        putStrLn "No parse.  Try again."
-        pure $ Right s0
-      Just (i, j) -> case makeMove i j p (b :&: (g, r)) of
-        Left e -> do
-          putStrLn $ "Bad move: " ++ show e
-          putStrLn "Try again."
-          pure $ Right s0
-        Right (b' :&: g') -> case sBoardOver b' of
-          SNothing -> pure . Right $ STuple2 (sAltP p) b' :&: (g', InPlay)
-          SJust s -> do
-            putStrLn $ displayBoard (FromSing b')
-            putStrLn "Game Over!"
-            pure $ Left (FromSing s)
+runGame cX cO (STuple2 p b :&: (g, r)) = case p of
+    SPX -> do
+      b' :&: (g', r') <- runController SPX cX (b :&: (g, r))
+      pure $ STuple2 SPO b' :&: (g', r')
+    SPO -> do
+      b' :&: (g', r') <- runController SPO cO (b :&: (g, r))
+      pure $ STuple2 SPX b' :&: (g', r')
 
-parseCoord :: String -> Maybe (N, N)
-parseCoord (j:i:_) = (,) <$> M.lookup i rowMap <*> M.lookup (toUpper j) colMap
-parseCoord _       = Nothing
-
-colMap :: M.Map Char N
-colMap = M.fromList $ zip ['A'..'Z'] (iterate S Z)
-rowMap :: M.Map Char N
-rowMap = M.fromList $ zip ['1'..'9'] (iterate S Z)
-
-displayBoard :: Board -> String
-displayBoard = unlines
-             . ("   A   B   C ":)
-             . intersperse "  ---+---+---"
-             . zipWith ((++) . addNum) [1..]
-             . map (intercalate "|" . map (pad1 . slotChar))
-  where
-    pad1 c = [' ', c, ' ']
-    slotChar Nothing   = ' '
-    slotChar (Just PX) = 'X'
-    slotChar (Just PO) = 'O'
-    addNum :: Int -> String
-    addNum n = show n ++ " "
+runController
+    :: Monad m
+    => Sing p
+    -> Controller m p
+    -> Σ Board (StateInPlaySym1 p)
+    -> ExceptT (Either Piece GameOver) m (Σ Board (StateInPlaySym1 (AltP p)))
+runController p c (b :&: (g, r)) = do
+    move <- lift $ c p b
+    case move of
+      Nothing -> throwE $ Left (FromSing p)
+      Just (STuple2 i j :&: Coord i' j') -> do
+        let b' = sPlaceBoard i j p b
+            g' = play r i' j' p g
+        case sBoardOver b' of
+          SNothing -> pure   $ b' :&: (g', InPlay)
+          SJust s  -> throwE $ Right (FromSing s)

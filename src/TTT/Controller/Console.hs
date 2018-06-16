@@ -3,6 +3,7 @@
 
 module TTT.Controller.Console (
     consoleController
+  , displayBoard
   ) where
 
 import           Control.Applicative
@@ -28,8 +29,7 @@ repeatUntil = fmap fromJust . runMaybeT . asum . repeat . MaybeT
 
 consoleController
     :: MonadIO m
-    => Sing p
-    -> Controller m p
+    => Controller m p
 consoleController p b = liftIO . repeatUntil $ do
     putStrLn $ displayBoard (FromSing b)
     putStrLn $ "Move for " ++ show (FromSing p)
