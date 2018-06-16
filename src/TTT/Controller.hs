@@ -3,13 +3,14 @@
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE PolyKinds       #-}
 {-# LANGUAGE RankNTypes      #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies    #-}
 
 module TTT.Controller (
-    Controller, Move
-  , priController
-  , randController
+    Controller, Move, CContext(..)
+  , priorityController
+  , randomController
   , validMoves
   ) where
 
@@ -27,7 +28,13 @@ import qualified System.Random.MWC          as MWC
 
 type Move b = Σ (N, N) (TyCon (Coord b 'Nothing))
 
-type Controller m (p :: Piece) = forall b. Sing p -> Sing b -> m (Maybe (Move b))
+data CContext p b = CC { _ccBoard     :: Sing b
+                       , _ccInPlay    :: InPlay b
+                       , _ccGameState :: GameState p b
+                       , _ccPlayer    :: Sing p
+                       }
+
+type Controller m p = forall b. CContext p b -> m (Maybe (Move b))
 
 validMoves :: Sing b -> M.Map (N, N) (Move b)
 validMoves b = M.fromList $ do
@@ -38,25 +45,27 @@ validMoves b = M.fromList $ do
          , STuple2 i j :&: Coord i' j'
          )
 
-priController
+-- | Picks the first valid move in the given list
+priorityController
     :: Applicative m
     => [(N, N)]
     -> Controller m p
-priController xs _ b = pure $ asum (map (uncurry (go b)) xs)
+priorityController xs CC{..} = pure $ asum (map (uncurry (go _ccBoard)) xs)
   where
     go :: Sing b -> N -> N -> Maybe (Σ (N, N) (TyCon (Coord b 'Nothing)))
     go b' (FromSing i) (FromSing j) = case pick i j b' of
       PickValid i' j' -> Just $ STuple2 i j :&: Coord i' j'
       _               -> Nothing
 
-randController
+-- | Picks a random move
+randomController
     :: PrimMonad m
     => Controller (ReaderT (MWC.Gen (PrimState m)) m) p
-randController _ b
+randomController CC{..}
     | M.null vm = pure Nothing
     | otherwise = do
         i <- MWC.uniformR (0, M.size vm - 1) =<< ask
         pure . Just . snd $ M.elemAt i vm
   where
-    vm = validMoves b
+    vm = validMoves _ccBoard
 

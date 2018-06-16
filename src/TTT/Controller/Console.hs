@@ -1,5 +1,6 @@
-{-# LANGUAGE PolyKinds  #-}
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE PolyKinds       #-}
+{-# LANGUAGE RankNTypes      #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module TTT.Controller.Console (
     consoleController
@@ -30,15 +31,15 @@ repeatUntil = fmap fromJust . runMaybeT . asum . repeat . MaybeT
 consoleController
     :: MonadIO m
     => Controller m p
-consoleController p b = liftIO . repeatUntil $ do
-    putStrLn $ displayBoard (FromSing b)
-    putStrLn $ "Move for " ++ show (FromSing p)
+consoleController CC{..} = liftIO . repeatUntil $ do
+    putStrLn $ displayBoard (FromSing _ccBoard)
+    putStrLn $ "Move for " ++ show (FromSing _ccPlayer)
     l <- getLine
     case parseCoord l of
       Nothing -> case map toLower l of
         'q':_ -> pure $ Just Nothing
         _     -> Nothing <$ putStrLn "No parse. Try again. (q to quit)"
-      Just (FromSing i, FromSing j) -> case pick i j b of
+      Just (FromSing i, FromSing j) -> case pick i j _ccBoard of
         PickValid i' j' -> pure . Just . Just $ STuple2 i j :&: Coord i' j'
         PickPlayed{}    -> Nothing <$ putStrLn "Spot is already played. Try again."
         PickOoBX{}      -> Nothing <$ putStrLn "Out of bounds. Try again."

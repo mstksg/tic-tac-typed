@@ -25,6 +25,7 @@ import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
 import           TTT.Controller
 import           TTT.Controller.Console
+import           TTT.Controller.Minimax
 import           TTT.Core
 import           Type.Family.Nat
 import qualified Data.Map                   as M
@@ -34,7 +35,8 @@ playerX :: Controller IO 'PX
 playerX = consoleController
 
 playerY :: MWC.GenIO -> Controller IO 'PO
-playerY g p = flip runReaderT g . randController p
+-- playerY g = flip runReaderT g . randomController
+playerY _ = minimaxController (S (S (S Z)))
 
 runner :: MWC.GenIO
        -> EndoM (ExceptT (Either Piece GameOver) IO)
@@ -73,7 +75,11 @@ runController
     -> Σ Board (StateInPlaySym1 p)
     -> ExceptT (Either Piece GameOver) m (Σ Board (StateInPlaySym1 (AltP p)))
 runController p c (b :&: (g, r)) = do
-    move <- lift $ c p b
+    move <- lift $ c CC { _ccBoard = b
+                        , _ccInPlay = r
+                        , _ccGameState = g
+                        , _ccPlayer = p
+                        }
     case move of
       Nothing -> throwE $ Left (FromSing p)
       Just (STuple2 i j :&: Coord i' j') -> do

@@ -57,6 +57,7 @@ $(singletons [d|
 
   data GameOver = GOCats
                 | GOWin Piece
+    deriving (Show, Eq)
 
   altP :: Piece -> Piece
   altP PX = PO
