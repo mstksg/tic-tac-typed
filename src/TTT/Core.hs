@@ -42,15 +42,17 @@ module TTT.Core (
   ) where
 
 import           Data.Kind
+import           Data.List hiding                    (lines)
 import           Data.Singletons
 import           Data.Singletons.Decide
-import           Data.Singletons.Prelude hiding  (Any)
+import           Data.Singletons.Prelude hiding      (Any)
+import           Data.Singletons.Prelude.List hiding (Any)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
 import           Data.Type.Index
 import           Data.Type.Product
-import           Prelude hiding                  (lines)
+import           Prelude hiding                      (lines)
 import           TTT.Combinator
 import           Type.Family.Nat
 
@@ -65,12 +67,12 @@ $(singletons [d|
   data Mode  = MPlay Piece
              | MStop (Maybe Piece)
 
+  diagonal :: [[a]] -> [a]
+  diagonal []          = []
+  diagonal ((x:_):xss) = x : diagonal (map (drop 1) xss)
+
   lines :: [[a]] -> [[a]]
-  lines [[x1,y1,z1], [x2,y2,z2], [x3,y3,z3]]
-    = [ [x1,y1,z1], [x2,y2,z2], [x3,y3,z3]
-      , [x1,x2,x3], [y1,y2,y3], [z1,z2,z3]
-      , [x1,y2,z3], [x3,y2,z1]
-      ]
+  lines xs = xs ++ transpose xs ++ [diagonal xs, diagonal (reverse xs)]
 
   type Board = [[Maybe Piece]]
 
@@ -80,6 +82,7 @@ $(singletons [d|
                , [Nothing, Nothing, Nothing]
                ]
   |])
+
 
 data Winner :: Piece -> [Maybe Piece] -> Type where
     W :: Uniform ('Just a ': as) -> Winner a ('Just a ': as)
