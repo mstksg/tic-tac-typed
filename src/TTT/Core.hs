@@ -135,11 +135,19 @@ gameState b = case boardWon b of
       Disproved notfilled ->
         Left $ GSInPlay notwon notfilled
 
+-- To disproe "any", prove that no possible example is true, out of all
+-- eight possible lines
 emptyBoardNoWin :: Refuted (BoardWon EmptyBoard)
-emptyBoardNoWin = undefined
+emptyBoardNoWin = \case
+    Any i (_ :&: W _) -> case i of
+      IS (IS (IS (IS (IS (IS (IS (IS s))))))) -> case s of {}
 
+-- To disprove "all", just find a single counter example
 emptyBoardNoFull :: Refuted (Full EmptyBoard)
-emptyBoardNoFull = undefined
+emptyBoardNoFull = \case
+    x :< _ -> case x of
+      y :< _ -> case y of
+        {}
 
 initGameState :: GameState ('MPlay 'PX) EmptyBoard
 initGameState = GSInPlay emptyBoardNoWin emptyBoardNoFull
