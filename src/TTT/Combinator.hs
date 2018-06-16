@@ -19,13 +19,7 @@
 
 
 module TTT.Combinator (
-    Uniform(..), uniform
-  , IsJust(..), isJust
-  , IsNothing(..)
-  , Any(..)
-  , decideAll, decideAny
-  -- , withSum
-  , mapIx, sMapIx, MapIx, MapIxSym0, MapIxSym1, MapIxSym2, MapIxSym3
+    mapIx, sMapIx, MapIx, MapIxSym0, MapIxSym1, MapIxSym2, MapIxSym3
   , setIx, sSetIx, SetIx, SetIxSym0, SetIxSym1, SetIxSym2, SetIxSym3
   , Sel(..), selSing
   , overSel, mapIx_proof
@@ -34,99 +28,98 @@ module TTT.Combinator (
   , OutOfBounds
   ) where
 
+-- import           Data.Type.Index
+-- import           Data.Type.Product
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
-import           Data.Singletons.Prelude hiding (Any)
+import           Data.Singletons.Prelude hiding  (Any)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
-import           Data.Type.Index
-import           Data.Type.Product
--- import           Data.Type.Sum
 import           Type.Family.Nat
 
-data Uniform :: [k] -> Type where
-    UZ :: Uniform '[a]
-    US :: Uniform (a ': as) -> Uniform (a ': a ': as)
+-- data Uniform :: [k] -> Type where
+--     UZ :: Uniform '[a]
+--     US :: Uniform (a ': as) -> Uniform (a ': a ': as)
 
-uniform
-    :: forall k (as :: [k]). SDecide k
-    => Sing as
-    -> Decision (Uniform as)
-uniform = \case
-    SNil         -> Disproved $ \case {}
-    x `SCons` xs -> uniform' x xs
+-- uniform
+--     :: forall k (as :: [k]). SDecide k
+--     => Sing as
+--     -> Decision (Uniform as)
+-- uniform = \case
+--     SNil         -> Disproved $ \case {}
+--     x `SCons` xs -> uniform' x xs
 
-uniform' :: forall k (a :: k) as. SDecide k
-    => Sing a
-    -> Sing as
-    -> Decision (Uniform (a ': as))
-uniform' x = go
-  where
-    go :: Sing bs -> Decision (Uniform (a ': bs))
-    go = \case
-      SNil -> Proved UZ
-      y `SCons` SNil -> case x %~ y of
-        Proved Refl -> Proved (US UZ)
-        Disproved v -> Disproved $ \case US _ -> v Refl
-      y `SCons` ss@(_ `SCons` _) -> case x %~ y of
-        Proved Refl -> case go ss of
-          Proved u    -> Proved (US u)
-          Disproved v -> Disproved $ \case US u -> v u
-        Disproved v -> Disproved $ \case US _ -> v Refl
+-- uniform' :: forall k (a :: k) as. SDecide k
+--     => Sing a
+--     -> Sing as
+--     -> Decision (Uniform (a ': as))
+-- uniform' x = go
+--   where
+--     go :: Sing bs -> Decision (Uniform (a ': bs))
+--     go = \case
+--       SNil -> Proved UZ
+--       y `SCons` SNil -> case x %~ y of
+--         Proved Refl -> Proved (US UZ)
+--         Disproved v -> Disproved $ \case US _ -> v Refl
+--       y `SCons` ss@(_ `SCons` _) -> case x %~ y of
+--         Proved Refl -> case go ss of
+--           Proved u    -> Proved (US u)
+--           Disproved v -> Disproved $ \case US u -> v u
+--         Disproved v -> Disproved $ \case US _ -> v Refl
 
-data IsJust :: Maybe k -> Type where
-    IsJust :: IsJust ('Just a)
+-- data IsJust :: Maybe k -> Type where
+--     IsJust :: IsJust ('Just a)
 
-isJust :: Sing a -> Decision (IsJust a)
-isJust = \case
-    SNothing -> Disproved $ \case {}
-    SJust _  -> Proved IsJust
+-- isJust :: Sing a -> Decision (IsJust a)
+-- isJust = \case
+--     SNothing -> Disproved $ \case {}
+--     SJust _  -> Proved IsJust
 
-data IsNothing :: Maybe k -> Type where
-    IsNothing :: IsNothing 'Nothing
+-- data IsNothing :: Maybe k -> Type where
+--     IsNothing :: IsNothing 'Nothing
 
-decideAll
-    :: forall f as. ()
-    => (forall a. Sing a -> Decision (f a))
-    -> Sing as
-    -> Decision (Prod f as)
-decideAll f = go
-  where
-    go  :: Sing bs -> Decision (Prod f bs)
-    go  = \case
-      SNil         -> Proved Ø
-      s `SCons` ss -> case f s of
-        Proved p    -> case go ss of
-          Proved ps    -> Proved $ p :< ps
-          Disproved vs -> Disproved $ \case
-            _ :< ps -> vs ps
-        Disproved v -> Disproved $ \case
-            p :< _ -> v p
+-- decideAll
+--     :: forall f as. ()
+--     => (forall a. Sing a -> Decision (f a))
+--     -> Sing as
+--     -> Decision (Prod f as)
+-- decideAll f = go
+--   where
+--     go  :: Sing bs -> Decision (Prod f bs)
+--     go  = \case
+--       SNil         -> Proved Ø
+--       s `SCons` ss -> case f s of
+--         Proved p    -> case go ss of
+--           Proved ps    -> Proved $ p :< ps
+--           Disproved vs -> Disproved $ \case
+--             _ :< ps -> vs ps
+--         Disproved v -> Disproved $ \case
+--             p :< _ -> v p
 
-data Any :: (k ~> Type) -> [k] -> Type where
-    Any :: Index as a -> f @@ a -> Any f as
+-- data Any :: (k ~> Type) -> [k] -> Type where
+--     Any :: Index as a -> f @@ a -> Any f as
 
-decideAny
-    :: forall f as. ()
-    => (forall a. Sing a -> Decision (f @@ a))
-    -> Sing as
-    -> Decision (Any f as)
-decideAny f = go
-  where
-    go  :: Sing bs -> Decision (Any f bs)
-    go  = \case
-      SNil         -> Disproved $ \case
-        Any i _ -> case i of {}
-      s `SCons` ss -> case f s of
-        Proved p    -> Proved $ Any IZ p
-        Disproved v -> case go ss of
-          Proved (Any i p) -> Proved $ Any (IS i) p
-          Disproved v'     -> Disproved $ \case
-            Any i p -> case i of
-              IZ    -> v  p
-              IS i' -> v' (Any i' p)
+-- decideAny
+--     :: forall f as. ()
+--     => (forall a. Sing a -> Decision (f @@ a))
+--     -> Sing as
+--     -> Decision (Any f as)
+-- decideAny f = go
+--   where
+--     go  :: Sing bs -> Decision (Any f bs)
+--     go  = \case
+--       SNil         -> Disproved $ \case
+--         Any i _ -> case i of {}
+--       s `SCons` ss -> case f s of
+--         Proved p    -> Proved $ Any IZ p
+--         Disproved v -> case go ss of
+--           Proved (Any i p) -> Proved $ Any (IS i) p
+--           Disproved v'     -> Disproved $ \case
+--             Any i p -> case i of
+--               IZ    -> v  p
+--               IS i' -> v' (Any i' p)
 
 -- withSum
 --     :: forall f as r. ()

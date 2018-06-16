@@ -39,7 +39,7 @@ module TTT.Core (
   ) where
 
 import           Data.Kind
-import           Data.List hiding                     (lines)
+import           Data.List hiding                (lines)
 import           Data.Singletons
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
@@ -47,12 +47,9 @@ import           Data.Singletons.Prelude.List
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
-import           Data.Type.Index
-import           Data.Type.Product
-import           Prelude hiding                       (lines)
-import           TTT.Combinator hiding                (Any)
+import           Prelude hiding                  (lines)
+import           TTT.Combinator
 import           Type.Family.Nat
-import qualified TTT.Combinator                       as TTT
 
 $(singletons [d|
   data Piece = PX | PO
