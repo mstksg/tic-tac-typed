@@ -43,6 +43,14 @@ packages:
     git: https://github.com/mstksg/type-combinators-singletons.git
     commit: 57c8d242e787758647eeff7ae7220484e1d8f9c6
   extra-dep: true
+- location:
+    git: https://github.com/goldfirere/singletons.git
+    commit: 56e4676f4ba68dc995cf9a644c13d489ffba366e
+  extra-dep: true
+- location:
+    git: https://github.com/goldfirere/th-desugar.git
+    commit: 80d08597c23d4defb81d6e48d3f407bc0d91f34d
+  extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.

@@ -23,7 +23,7 @@ module TTT.Combinator (
   , IsJust(..), isJust
   , Any(..)
   , decideAll, decideAny
-  , withSum
+  -- , withSum
   , mapIx, sMapIx, MapIx, MapIxSym0, MapIxSym1, MapIxSym2, MapIxSym3
   , setIx, sSetIx, SetIx, SetIxSym0, SetIxSym1, SetIxSym2, SetIxSym3
   , Sel(..), selSing
@@ -42,7 +42,7 @@ import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
 import           Data.Type.Index
 import           Data.Type.Product
-import           Data.Type.Sum
+-- import           Data.Type.Sum
 import           Type.Family.Nat
 
 data Uniform :: [k] -> Type where
@@ -124,14 +124,14 @@ decideAny f = go
               IZ    -> v  p
               IS i' -> v' (Any i' p)
 
-withSum
-    :: forall f as r. ()
-    => Sum f as
-    -> (forall a. Index as a -> f a -> r)
-    -> r
-withSum = \case
-    InL x  -> \f -> f IZ x
-    InR xs -> \f -> withSum xs (f . IS)
+-- withSum
+--     :: forall f as r. ()
+--     => Sum f as
+--     -> (forall a. Index as a -> f a -> r)
+--     -> r
+-- withSum = \case
+--     InL x  -> \f -> f IZ x
+--     InR xs -> \f -> withSum xs (f . IS)
 
 data Sel :: N -> [k] -> k -> Type where
     SelZ :: Sel 'Z (a ': as) a
