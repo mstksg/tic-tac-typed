@@ -1,7 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveFoldable        #-}
+{-# LANGUAGE DeriveFunctor         #-}
+{-# LANGUAGE DeriveTraversable     #-}
 {-# LANGUAGE EmptyCase             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE KindSignatures        #-}
 {-# LANGUAGE LambdaCase            #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -14,12 +19,15 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeInType            #-}
 {-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
 {-# LANGUAGE UndecidableInstances  #-}
 {-# LANGUAGE ViewPatterns          #-}
 
 
 module TTT.Combinator (
-    Uniform(..), uniform
+    V3(..), SV3, Sing(SMkV3), MkV3Sym0, MkV3Sym1, MkV3Sym2
+  , AllV3(..), V3Ix(..), AnyV3(..)
+  , Uniform(..), uniform
   , IsJust(..), isJust
   , Any(..)
   , decideAll, decideAny
@@ -44,6 +52,22 @@ import           Data.Type.Index
 import           Data.Type.Product
 -- import           Data.Type.Sum
 import           Type.Family.Nat
+
+$(singletons [d|
+  data V3 a = MkV3 a a a
+    deriving (Show, Eq, Functor, Foldable, Traversable)
+  |])
+
+data AllV3 :: (k ~> Type) -> V3 k -> Type where
+    AllV3 :: (f @@ a) -> (f @@ b) -> (f @@ c) -> AllV3 f ('MkV3 a b c)
+
+data V3Ix :: V3 k -> k -> Type where
+    V3X :: V3Ix ('MkV3 a b c) a
+    V3Y :: V3Ix ('MkV3 a b c) b
+    V3Z :: V3Ix ('MkV3 a b c) c
+
+data AnyV3 :: (k ~> Type) -> V3 k -> Type where
+    AnyV3 :: V3Ix v a -> f @@ a -> AnyV3 f v
 
 data Uniform :: [k] -> Type where
     UZ :: Uniform '[a]
@@ -123,15 +147,6 @@ decideAny f = go
             Any i p -> case i of
               IZ    -> v  p
               IS i' -> v' (Any i' p)
-
--- withSum
---     :: forall f as r. ()
---     => Sum f as
---     -> (forall a. Index as a -> f a -> r)
---     -> r
--- withSum = \case
---     InL x  -> \f -> f IZ x
---     InR xs -> \f -> withSum xs (f . IS)
 
 data Sel :: N -> [k] -> k -> Type where
     SelZ :: Sel 'Z (a ': as) a

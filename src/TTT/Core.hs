@@ -65,20 +65,20 @@ $(singletons [d|
   data Mode  = MPlay Piece
              | MStop (Maybe Piece)
 
-  lines :: [[a]] -> [[a]]
-  lines [[x1,y1,z1], [x2,y2,z2], [x3,y3,z3]]
-    = [ [x1,y1,z1], [x2,y2,z2], [x3,y3,z3]
-      , [x1,x2,x3], [y1,y2,y3], [z1,z2,z3]
-      , [x1,y2,z3], [x3,y2,z1]
+  data Line a = L a a a
+  type Board = Line (Line (Maybe Piece))
+
+  lines :: Board -> [Line (Maybe Piece)]
+  lines (L (L x1 y1 z1) (L x2 y2 z2) (L x3 y3 z3))
+    = [ L x1 y1 z1, L x2 y2 z2, L x3 y3 z3
+      , L x1 x2 x3, L y1 y2 y3, L z1 z2 z3
+      , L x1 y2 z3, L x3 y2 z1
       ]
 
-  type Board = [[Maybe Piece]]
-
   emptyBoard :: Board
-  emptyBoard = [ [Nothing, Nothing, Nothing]
-               , [Nothing, Nothing, Nothing]
-               , [Nothing, Nothing, Nothing]
-               ]
+  emptyBoard = L (L Nothing Nothing Nothing)
+                 (L Nothing Nothing Nothing)
+                 (L Nothing Nothing Nothing)
   |])
 
 data Winner :: Piece -> [Maybe Piece] -> Type where
@@ -87,7 +87,7 @@ data Winner :: Piece -> [Maybe Piece] -> Type where
 type Victory b = Σ Piece (FlipSym2 (TyCon Winner) b)
 genDefunSymbols [''Victory]
 
-type Full       = Prod (Prod IsJust)
+type Full       = AllV3 (TyCon (AllV3 (TyCon IsJust)))
 type BoardWon b = Any VictorySym0 (Lines b)
 
 full
