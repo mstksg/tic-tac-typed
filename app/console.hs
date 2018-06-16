@@ -25,7 +25,7 @@ data MoveError = MEPlaced
                | MEOutOfBounds
   deriving Show
 
-type InPlayLog (p :: Piece) b = (GameLog b, InPlay b)
+type InPlayLog p b = (GameLog p b, InPlay b)
 genDefunSymbols [''InPlayLog]
 
 makeMove
@@ -33,7 +33,7 @@ makeMove
     -> N
     -> Sing p
     -> Σ Board (InPlayLogSym1 p)
-    -> Either MoveError (Σ Board (TyCon GameLog))
+    -> Either MoveError (Σ Board (TyCon (GameLog (AltP p))))
 makeMove (FromSing i) (FromSing j) p (b :&: (gl, r)) = case pick i j b of
     PickValid i' j' -> Right $ sPlaceBoard i j p b
                            :&: play r i' j' p gl
@@ -42,7 +42,7 @@ makeMove (FromSing i) (FromSing j) p (b :&: (gl, r)) = case pick i j b of
     PickOoBY{}      -> Left MEOutOfBounds
 
 main :: IO ()
-main = gameLoop (STuple2 SPX sing :&: (initGameLog, InPlay))
+main = gameLoop (STuple2 sing sing :&: (GLStart @'PX, InPlay))
 
 gameLoop
     :: Σ (Piece, Board) (UncurrySym1 InPlayLogSym0)

@@ -35,10 +35,7 @@ module TTT.Core (
   , play
   , GameLog(..), Update(..)
   , boardOver, BoardOver, sBoardOver
-  , initGameLog
   , InPlay(..)
-  , emptyBoardNoFull
-  , emptyBoardNoWin
   ) where
 
 import           Data.Kind
@@ -86,32 +83,6 @@ $(singletons [d|
                , [Nothing, Nothing, Nothing]
                ]
   |])
-
-data Winner :: Piece -> [Maybe Piece] -> Type where
-    W :: Uniform ('Just a ': as) -> Winner a ('Just a ': as)
-
-type Victory b = Σ Piece (FlipSym2 (TyCon Winner) b)
-genDefunSymbols [''Victory]
-
-type Full       = Prod (Prod IsJust)
-type BoardWon b = TTT.Any VictorySym0 (Lines b)
-
--- To disproe "any", prove that no possible example is true, out of all
--- eight possible lines
-emptyBoardNoWin :: Refuted (BoardWon EmptyBoard)
-emptyBoardNoWin = \case
-    TTT.Any i (_ :&: W _) -> case i of
-      IS (IS (IS (IS (IS (IS (IS (IS s))))))) -> case s of {}
-
--- To disprove "all", just find a single counter example
-emptyBoardNoFull :: Refuted (Full EmptyBoard)
-emptyBoardNoFull = \case
-    x :< _ -> case x of
-      y :< _ -> case y of
-        {}
-
--- initGameState :: GameState ('MPlay 'PX) EmptyBoard
--- initGameState = GSInPlay emptyBoardNoWin emptyBoardNoFull
 
 data Pick :: N -> N -> Board -> Type where
     PickValid  :: Sel i b row     -> Sel j row 'Nothing  -> Pick i j b
@@ -173,15 +144,13 @@ data Update :: N -> N -> Piece -> Board -> Board -> Type where
            -> Sing p
            -> Update i j p b (PlaceBoard i j p b)
 
-data GameLog :: Board -> Type where
-    GLStart  :: GameLog b
+-- | Last played, and current board
+data GameLog :: Piece -> Board -> Type where
+    GLStart  :: GameLog p EmptyBoard
     GLUpdate :: InPlay b1
-             -> Update i j p b1 b2
-             -> GameLog      b1
-             -> GameLog      b2
-
-initGameLog :: GameLog EmptyBoard
-initGameLog = GLStart
+             -> Update i j p        b1 b2
+             -> GameLog    p        b1
+             -> GameLog    (AltP p)    b2
 
 play
     :: forall b i j row p. ()
@@ -189,7 +158,7 @@ play
     -> Sel i b    row
     -> Sel j row 'Nothing
     -> Sing p
-    -> GameLog b
-    -> GameLog (PlaceBoard i j p b)
+    -> GameLog p b
+    -> GameLog (AltP p) (PlaceBoard i j p b)
 play r i j p = GLUpdate r (Update i j p)
 
