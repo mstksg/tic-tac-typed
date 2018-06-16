@@ -6,12 +6,13 @@
 {-# LANGUAGE TypeFamilies    #-}
 
 module TTT.Controller (
-    Controller
+    Controller, Move
   , priController
   , randController
   , validMoves
   ) where
 
+import           Control.Monad.IO.Class
 import           Control.Monad.Primitive
 import           Control.Monad.Trans.Reader
 import           Data.Foldable
@@ -20,12 +21,21 @@ import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           TTT.Core
 import           Type.Family.Nat
-import qualified Data.Map                           as M
-import qualified System.Random.MWC                  as MWC
+import qualified Data.Map                   as M
+import qualified System.Random.MWC          as MWC
 
 type Move b = Σ (N, N) (TyCon (Coord b 'Nothing))
 
-type Controller m p = forall b. Sing b -> m (Maybe (Move b))
+type Controller m (p :: Piece) = forall b. Sing b -> m (Maybe (Move b))
+
+validMoves :: Sing b -> M.Map (N, N) (Move b)
+validMoves b = M.fromList $ do
+    (FromSing i, row) <- zip (iterate S Z) (FromSing b)
+    (FromSing j, _  ) <- zip (iterate S Z) row
+    PickValid i' j'   <- pure $ pick i j b
+    pure ( (FromSing i, FromSing j)
+         , STuple2 i j :&: Coord i' j'
+         )
 
 priController
     :: Applicative m
@@ -49,11 +59,3 @@ randController b
   where
     vm = validMoves b
 
-validMoves :: Sing b -> M.Map (N, N) (Move b)
-validMoves b = M.fromList $ do
-    (FromSing i, row) <- zip (iterate S Z) (FromSing b)
-    (FromSing j, _  ) <- zip (iterate S Z) row
-    PickValid i' j'   <- pure $ pick i j b
-    pure ( (FromSing i, FromSing j)
-         , STuple2 i j :&: Coord i' j'
-         )
