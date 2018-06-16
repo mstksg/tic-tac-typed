@@ -33,7 +33,7 @@ module TTT.Core (
   , Pick(..), pick
   , PlaceBoard, sPlaceBoard, placeBoard
   , play
-  , GameLog(..), Update(..)
+  , GameState(..), Update(..)
   , boardOver, BoardOver, sBoardOver
   , InPlay(..)
   ) where
@@ -142,12 +142,12 @@ data Update :: N -> N -> Piece -> Board -> Board -> Type where
            -> Update i j p b (PlaceBoard i j p b)
 
 -- | Last played, and current board
-data GameLog :: Piece -> Board -> Type where
-    GLStart  :: GameLog p EmptyBoard
-    GLUpdate :: InPlay b1
+data GameState :: Piece -> Board -> Type where
+    GSStart  :: GameState p EmptyBoard
+    GSUpdate :: InPlay b1
              -> Update i j p        b1 b2
-             -> GameLog    p        b1
-             -> GameLog    (AltP p)    b2
+             -> GameState    p        b1
+             -> GameState    (AltP p)    b2
 
 play
     :: forall b i j row p. ()
@@ -155,7 +155,7 @@ play
     -> Sel i b    row
     -> Sel j row 'Nothing
     -> Sing p
-    -> GameLog p b
-    -> GameLog (AltP p) (PlaceBoard i j p b)
-play r i j p = GLUpdate r (Update i j p)
+    -> GameState p b
+    -> GameState (AltP p) (PlaceBoard i j p b)
+play r i j p = GSUpdate r (Update i j p)
 

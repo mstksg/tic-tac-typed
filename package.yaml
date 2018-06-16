@@ -41,6 +41,7 @@ executables:
     dependencies:
     - tic-tac-typed
     - containers
+    - transformers
     ghc-options:
     - -threaded
     - -rtsopts
