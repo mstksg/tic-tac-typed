@@ -19,30 +19,30 @@ extra-source-files:
 # common to point users to the README.md file.
 description:         Please see the README on GitHub at <https://github.com/mstksg/tic-tac-typed#readme>
 
-dependencies:
-- base >= 4.7 && < 5
-- type-combinators
-- type-combinators-singletons
-- singletons
-- dependent-sum
-
 ghc-options:
 - -Wall
 - -fno-max-relevant-binds
 
+dependencies:
+- base >= 4.7 && < 5
+- singletons
+- type-combinators
+- type-combinators-singletons
+
 library:
   source-dirs: src
 
-# executables:
-#   tic-tac-typed-exe:
-#     main:                Main.hs
-#     source-dirs:         app
-#     ghc-options:
-#     - -threaded
-#     - -rtsopts
-#     - -with-rtsopts=-N
-#     dependencies:
-#     - tic-tac-typed
+executables:
+  tic-tac-typed-console:
+    main:                console.hs
+    source-dirs:         app
+    dependencies:
+    - tic-tac-typed
+    - containers
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
 
 # tests:
 #   tic-tac-typed-test:

@@ -123,8 +123,6 @@ decideAny f = go
             Any i p -> case i of
               IZ    -> v  p
               IS i' -> v' (Any i' p)
-            -- AnyL p  -> v  p
-            -- AnyR ps -> vs ps
 
 withSum
     :: forall f as r. ()

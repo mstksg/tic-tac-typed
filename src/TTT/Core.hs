@@ -26,11 +26,14 @@ module TTT.Core (
   , Sing(SPX, SPO, SMPlay, SMStop)
   , altP, AltP, sAltP
   , lines, Lines, sLines
+  , Board
   , emptyBoard, sEmptyBoard, EmptyBoard
   , Victory, Full, BoardWon
   , GameState(..)
   , StoppedGame, StoppedGameSym0, StoppedGameSym1, StoppedGameSym2
+  , initGameState
   , Pick(..), pick
+  , PlayResult(..)
   , play
   , PlaceBoard, sPlaceBoard, placeBoard
   , placeSel
@@ -43,8 +46,8 @@ import           Data.Singletons.Prelude hiding  (Any)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
+import           Data.Type.Index
 import           Data.Type.Product
-import           Data.Type.Sum
 import           Prelude hiding                  (lines)
 import           TTT.Combinator
 import           Type.Family.Nat
@@ -67,7 +70,9 @@ $(singletons [d|
       , [x1,y2,z3], [x3,y2,z1]
       ]
 
-  emptyBoard :: [[Maybe Piece]]
+  type Board = [[Maybe Piece]]
+
+  emptyBoard :: Board
   emptyBoard = [ [Nothing, Nothing, Nothing]
                , [Nothing, Nothing, Nothing]
                , [Nothing, Nothing, Nothing]
@@ -103,7 +108,7 @@ victory ss = case uniform ss of
 boardWon :: Sing b -> Decision (BoardWon b)
 boardWon = decideAny victory . sLines
 
-data GameState :: Mode -> [[Maybe Piece]] -> Type where
+data GameState :: Mode -> Board -> Type where
     GSVictory :: Any (TyCon1 (Winner p)) (Lines b)
               -> GameState ('MStop ('Just p)) b
     GSCats    :: Refuted (BoardWon b)
@@ -130,7 +135,16 @@ gameState b = case boardWon b of
       Disproved notfilled ->
         Left $ GSInPlay notwon notfilled
 
-data Pick :: N -> N -> [[Maybe Piece]] -> Type where
+emptyBoardNoWin :: Refuted (BoardWon EmptyBoard)
+emptyBoardNoWin = undefined
+
+emptyBoardNoFull :: Refuted (Full EmptyBoard)
+emptyBoardNoFull = undefined
+
+initGameState :: GameState ('MPlay 'PX) EmptyBoard
+initGameState = GSInPlay emptyBoardNoWin emptyBoardNoFull
+
+data Pick :: N -> N -> Board -> Type where
     PickValid  :: Sel i b row     -> Sel j row 'Nothing  -> Pick i j b
     PickPlayed :: Sel i b row     -> Sel j row ('Just p) -> Sing p -> Pick i j b
     PickOoBX   :: OutOfBounds i b ->                        Pick i j b
@@ -150,7 +164,7 @@ pick i j b = case listSel i b of
     Disproved v -> PickOoBX v
 
 $(singletons [d|
-  placeBoard :: N -> N -> Piece -> [[Maybe Piece]] -> [[Maybe Piece]]
+  placeBoard :: N -> N -> Piece -> Board -> Board
   placeBoard Z     j p (x:xs) = setIx j (Just p) x : xs
   placeBoard (S n) j p (x:xs) =                  x : placeBoard n j p xs
   |])
@@ -168,12 +182,19 @@ placeSel = \case
     SelS i -> \j p -> \case
       r `SCons` rs ->                    r `SCons` placeSel i j p rs
 
+data PlayResult :: Piece -> Board -> Type where
+    PRInPlay  :: GameState ('MPlay p) b -> PlayResult p b
+    PRStopped :: Sing s -> GameState ('MStop s) b -> PlayResult p b
+
 play
     :: forall (b :: [[Maybe Piece]]) b' i j row p. (b' ~ PlaceBoard i j p b)
     => Sel i b    row
     -> Sel j row 'Nothing
     -> Sing p
     -> Sing b
-    -> Either (GameState ('MPlay (AltP p)) b')
-              (Σ _ (StoppedGameSym1 b'))
-play i j p = gameState @b' @(AltP p) . placeSel i j p
+    -> PlayResult (AltP p) b'
+play i j p b = case gameState @b' @(AltP p) (placeSel i j p b) of
+    Left gs          -> PRInPlay  gs
+    Right (s :&: gs) -> PRStopped s gs
+
+
