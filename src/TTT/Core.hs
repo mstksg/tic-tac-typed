@@ -24,27 +24,21 @@
 
 module TTT.Core (
     Piece(..), SPiece()
-  , Mode(..), SMode
-  , Sing(SPX, SPO, SMPlay, SMStop)
+  , GameOver(..), SGameOver
+  , Sing(SPX, SPO, SGOWin, SGOCats)
   , altP, AltP, sAltP
   , lines, Lines, sLines
   , Board, BoardSym0
   , emptyBoard, sEmptyBoard, EmptyBoard
-  , InPlay(..), inPlay
-  , Victory, Full, BoardWon
-  , GameState(..)
-  , StoppedGame, StoppedGameSym0, StoppedGameSym1, StoppedGameSym2
-  , initGameState
   , Pick(..), pick
-  , PlayResult(..)
-  , play
   , PlaceBoard, sPlaceBoard, placeBoard
-  , placeSel
-  , play'
+  , play
   , GameLog(..), Update(..)
-  , boardMode, BoardMode, sBoardMode
-  , boardModeInPlay
+  , boardOver, BoardOver, sBoardOver
   , initGameLog
+  , InPlay(..)
+  , emptyBoardNoFull
+  , emptyBoardNoWin
   ) where
 
 import           Data.Kind
@@ -53,7 +47,6 @@ import           Data.Singletons
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
 import           Data.Singletons.Prelude.List
-import           Data.Singletons.Prelude.Maybe hiding (IsJust)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
@@ -72,8 +65,8 @@ $(singletons [d|
   altP PX = PO
   altP PO = PX
 
-  data Mode  = MPlay Piece
-             | MStop (Maybe Piece)
+  data GameOver = GOCats
+                | GOWin Piece
 
   diagonal :: [[a]] -> [a]
   diagonal []          = []
@@ -94,15 +87,6 @@ $(singletons [d|
                ]
   |])
 
-data InPlay :: Mode -> Piece -> Type where
-    InPlay :: InPlay ('MPlay p) p
-
-inPlay :: Sing m -> Decision (Σ Piece (TyCon (InPlay m)))
-inPlay = \case
-    SMPlay p -> Proved $ p :&: InPlay
-    SMStop _ -> Disproved $ \case
-      _ :&: ip -> case ip of {}
-
 data Winner :: Piece -> [Maybe Piece] -> Type where
     W :: Uniform ('Just a ': as) -> Winner a ('Just a ': as)
 
@@ -111,59 +95,6 @@ genDefunSymbols [''Victory]
 
 type Full       = Prod (Prod IsJust)
 type BoardWon b = TTT.Any VictorySym0 (Lines b)
-
-full
-    :: Sing b
-    -> Decision (Full b)
-full = decideAll (decideAll isJust)
-
-
-victory
-    :: forall (as :: [Maybe Piece]). ()
-    => Sing as
-    -> Decision (Victory as)
-victory ss = case uniform ss of
-    Proved u -> case ss of
-      SNil               -> Disproved $ \case
-        _ :&: w -> case w of {}
-      SNothing `SCons` _ -> Disproved $ \case
-        _ :&: w -> case w of {}
-      SJust x  `SCons` _ -> Proved $ x :&: W u
-    Disproved v -> Disproved $ \case
-      _ :&: W u -> v u
-
-boardWon
-    :: forall (b :: Board). ()
-    => Sing b
-    -> Decision (BoardWon b)
-boardWon = decideAny victory . sLines
-
-data GameState :: Mode -> Board -> Type where
-    GSVictory :: TTT.Any (TyCon (Winner p)) (Lines b)
-              -> GameState ('MStop ('Just p)) b
-    GSCats    :: Refuted (BoardWon b)
-              -> Full b
-              -> GameState ('MStop 'Nothing) b
-    GSInPlay  :: Refuted (BoardWon b)
-              -> Refuted (Full b)
-              -> GameState ('MPlay p) b
-
-type StoppedGame b s = GameState ('MStop s) b
-genDefunSymbols [''StoppedGame]
-
-gameState
-    :: forall b p. ()
-    => Sing b
-    -> Either (GameState ('MPlay p) b)
-              (Σ _ (StoppedGameSym1 b))
-gameState b = case boardWon b of
-    Proved (TTT.Any i (x :&: w)) ->
-      Right $ SJust x :&: GSVictory (TTT.Any i w)
-    Disproved notwon -> case full b of
-      Proved filled ->
-        Right $ SNothing :&: GSCats notwon filled
-      Disproved notfilled ->
-        Left $ GSInPlay notwon notfilled
 
 -- To disproe "any", prove that no possible example is true, out of all
 -- eight possible lines
@@ -179,8 +110,8 @@ emptyBoardNoFull = \case
       y :< _ -> case y of
         {}
 
-initGameState :: GameState ('MPlay 'PX) EmptyBoard
-initGameState = GSInPlay emptyBoardNoWin emptyBoardNoFull
+-- initGameState :: GameState ('MPlay 'PX) EmptyBoard
+-- initGameState = GSInPlay emptyBoardNoWin emptyBoardNoFull
 
 data Pick :: N -> N -> Board -> Type where
     PickValid  :: Sel i b row     -> Sel j row 'Nothing  -> Pick i j b
@@ -206,6 +137,10 @@ $(singletons [d|
   placeBoard Z     j p (x:xs) = setIx j (Just p) x : xs
   placeBoard (S n) j p (x:xs) =                  x : placeBoard n j p xs
 
+  (<|>) :: Maybe a -> Maybe a -> Maybe a
+  Just x  <|> _ = Just x
+  Nothing <|> y = y
+
   winLine :: [Maybe Piece] -> Maybe Piece
   winLine [] = Nothing
   winLine (Nothing:_) = Nothing
@@ -214,81 +149,33 @@ $(singletons [d|
     else Nothing
 
   fullLine :: [Maybe Piece] -> Bool
-  fullLine [] = True
+  fullLine []           = True
   fullLine (Nothing:_ ) = False
   fullLine (Just _ :xs) = fullLine xs
 
   findMaybe :: (a -> Maybe b) -> [a] -> Maybe b
-  findMaybe _ [] = Nothing
-  findMaybe f (x:xs) = case f x of
-    Nothing -> findMaybe f xs
-    Just y  -> Just y
+  findMaybe _ []     = Nothing
+  findMaybe f (x:xs) = f x <|> findMaybe f xs
 
-  boardMode :: Piece -> Board -> Mode
-  boardMode p b = case findMaybe winLine (lines b) of
-    Just w  -> MStop (Just w)
-    Nothing -> if all fullLine b
-      then MStop Nothing
-      else MPlay p
+  boardOver :: Board -> Maybe GameOver
+  boardOver b = (GOWin <$> findMaybe winLine (lines b))
+            <|> if all fullLine b
+                  then Just GOCats
+                  else Nothing
   |])
 
-boardModeInPlay
-    :: Sing p
-    -> Sing b
-    -> InPlay (BoardMode p b) p'
-    -> p :~: p'
-boardModeInPlay p b InPlay = case sBoardMode p b of
-    SMPlay p' -> case p %~ p' of
-      Proved Refl -> Refl
-      Disproved _ -> error "This should never happen, but GHC says it could?"
-    -- -> Decision (InPlay (BoardMode p b) p)
--- boardModeInPlay = \case
-    -- SPX -> \b -> case sBoardMode SPX b of
-    --   SMPlay SPX -> Proved InPlay
-    --   SMPlay SPO -> error "This should never happen, but GHC says it could?"
-    --   SMStop _   -> Disproved $ \case {}
-    -- SPO -> \b -> case sBoardMode SPO b of
-    --   SMPlay SPX -> error "This should never happen, but GHC says it could?"
-    --   SMPlay SPO -> Proved InPlay
-    --   SMStop _   -> Disproved $ \case {}
-
-
-placeSel
-    :: forall b i j p row. ()
-    => Sel i b    row
-    -> Sel j row 'Nothing
-    -> Sing p
-    -> Sing b
-    -> Sing (PlaceBoard i j p b)
-placeSel = \case
-    SelZ -> \j p -> \case
-      r `SCons` rs -> setSel j (SJust p) r `SCons` rs
-    SelS i -> \j p -> \case
-      r `SCons` rs ->                    r `SCons` placeSel i j p rs
-
-data PlayResult :: Piece -> Board -> Type where
-    PRInPlay  :: GameState ('MPlay p) b -> PlayResult p b
-    PRStopped :: Sing s -> GameState ('MStop s) b -> PlayResult p b
-
-play
-    :: forall (b :: [[Maybe Piece]]) b' i j row p. (b' ~ PlaceBoard i j p b)
-    => Sel i b    row
-    -> Sel j row 'Nothing
-    -> Sing p
-    -> Sing b
-    -> PlayResult (AltP p) b'
-play i j p b = case gameState @b' @(AltP p) (placeSel i j p b) of
-    Left gs          -> PRInPlay  gs
-    Right (s :&: gs) -> PRStopped s gs
+data InPlay :: Board -> Type where
+    InPlay :: (BoardOver b ~ 'Nothing) => InPlay b
 
 data Update :: N -> N -> Piece -> Board -> Board -> Type where
     Update :: Sel i b   row
            -> Sel j row 'Nothing
+           -> Sing p
            -> Update i j p b (PlaceBoard i j p b)
 
 data GameLog :: Board -> Type where
     GLStart  :: GameLog b
-    GLUpdate :: InPlay (BoardMode p b1) p
+    GLUpdate :: InPlay b1
              -> Update i j p b1 b2
              -> GameLog      b1
              -> GameLog      b2
@@ -296,46 +183,13 @@ data GameLog :: Board -> Type where
 initGameLog :: GameLog EmptyBoard
 initGameLog = GLStart
 
--- checkMode
---     :: Sing b
---     -> MPlay
-
--- data CheckMode :: Board -> Type where
---     CMPlay :: BoardMode p b :~: 'MPlay p -> CheckMode b
---     CMStop :: Sing s -> BoardMode p b :~: 'MStop s -> CHeckMode b
-
-  -- winLine :: [Maybe Piece] -> Maybe Piece
-  -- winLine [] = Nothing
-  -- winLine (Nothing:xs) = Nothing
-  -- winLine (Just x:xs)  = if all (== Just x) xs
-  --   then Just x
-  --   else Nothing
-
-  -- fullLine :: [Maybe Piece] -> Bool
-  -- fullLine [] = True
-  -- fullLine (Nothing:_ ) = False
-  -- fullLine (Just _ :xs) = fullLine xs
-
-  -- findMaybe :: (a -> Maybe b) -> [a] -> Maybe b
-  -- findMaybe _ [] = Nothing
-  -- findMaybe f (x:xs) = case f x of
-  --   Nothing -> findMaybe f xs
-  --   Just y  -> Just y
-
-  -- boardMode :: Piece -> Board -> Mode
-  -- boardMode p b = case findMaybe winLine (lines b) of
-  --   Just w  -> MStop (Just w)
-  --   Nothing -> if all fullLine b
-  --     then MStop Nothing
-  --     else MPlay (altP p)
-
-    -- GLUpdate :: BoardMode p b1 :~: 'MPlay p
-
-play'
+play
     :: forall b i j row p. ()
-    => InPlay (BoardMode p b) p
+    => InPlay b
     -> Sel i b    row
     -> Sel j row 'Nothing
+    -> Sing p
     -> GameLog b
     -> GameLog (PlaceBoard i j p b)
-play' r i j = GLUpdate r (Update i j)
+play r i j p = GLUpdate r (Update i j p)
+

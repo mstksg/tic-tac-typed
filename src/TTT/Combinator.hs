@@ -21,6 +21,7 @@
 module TTT.Combinator (
     Uniform(..), uniform
   , IsJust(..), isJust
+  , IsNothing(..)
   , Any(..)
   , decideAll, decideAny
   -- , withSum
@@ -82,6 +83,9 @@ isJust :: Sing a -> Decision (IsJust a)
 isJust = \case
     SNothing -> Disproved $ \case {}
     SJust _  -> Proved IsJust
+
+data IsNothing :: Maybe k -> Type where
+    IsNothing :: IsNothing 'Nothing
 
 decideAll
     :: forall f as. ()
