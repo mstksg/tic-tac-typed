@@ -198,13 +198,13 @@ setIx_proof = \case
     SelS n -> \case
       _ `SCons` xs -> SelS $ setIx_proof n xs
 
-type OutOfBounds n (as :: [k]) = Refuted (Σ k (TyCon1 (Sel n as)))
+type OutOfBounds n (as :: [k]) = Refuted (Σ k (TyCon (Sel n as)))
 
 listSel
     :: forall k n (as :: [k]). ()
     => Sing n
     -> Sing as
-    -> Decision (Σ k (TyCon1 (Sel n as)))
+    -> Decision (Σ k (TyCon (Sel n as)))
 listSel = \case
     SZ -> \case
       SNil -> Disproved $ \case

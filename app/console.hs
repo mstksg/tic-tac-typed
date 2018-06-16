@@ -25,7 +25,7 @@ type InPlayGame p b = GameState ('MPlay p) b
 genDefunSymbols [''InPlayGame]
 
 type SomePlayableGameState = Σ (Piece, Board) (UncurrySym1 InPlayGameSym0    )
-type SomeGameState         = Σ (Mode, Board) (UncurrySym1  (TyCon2 GameState))
+type SomeGameState         = Σ (Mode, Board) (UncurrySym1  (TyCon GameState))
 
 makeMove
     :: N

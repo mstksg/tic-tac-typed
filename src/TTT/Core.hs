@@ -28,7 +28,7 @@ module TTT.Core (
   , Sing(SPX, SPO, SMPlay, SMStop)
   , altP, AltP, sAltP
   , lines, Lines, sLines
-  , Board
+  , Board, BoardSym0
   , emptyBoard, sEmptyBoard, EmptyBoard
   , Victory, Full, BoardWon
   , GameState(..)
@@ -81,10 +81,10 @@ $(singletons [d|
                ]
   |])
 
-data Winner :: k -> [Maybe k] -> Type where
+data Winner :: Piece -> [Maybe Piece] -> Type where
     W :: Uniform ('Just a ': as) -> Winner a ('Just a ': as)
 
-type Victory b = Σ Piece (FlipSym2 (TyCon2 Winner) b)
+type Victory b = Σ Piece (FlipSym2 (TyCon Winner) b)
 genDefunSymbols [''Victory]
 
 type Full       = Prod (Prod IsJust)
@@ -96,7 +96,10 @@ full
 full = decideAll (decideAll isJust)
 
 
-victory :: Sing as -> Decision (Victory as)
+victory
+    :: forall (as :: [Maybe Piece]). ()
+    => Sing as
+    -> Decision (Victory as)
 victory ss = case uniform ss of
     Proved u -> case ss of
       SNil               -> Disproved $ \case
@@ -107,11 +110,14 @@ victory ss = case uniform ss of
     Disproved v -> Disproved $ \case
       _ :&: W u -> v u
 
-boardWon :: Sing b -> Decision (BoardWon b)
+boardWon
+    :: forall (b :: Board). ()
+    => Sing b
+    -> Decision (BoardWon b)
 boardWon = decideAny victory . sLines
 
 data GameState :: Mode -> Board -> Type where
-    GSVictory :: Any (TyCon1 (Winner p)) (Lines b)
+    GSVictory :: Any (TyCon (Winner p)) (Lines b)
               -> GameState ('MStop ('Just p)) b
     GSCats    :: Refuted (BoardWon b)
               -> Full b
