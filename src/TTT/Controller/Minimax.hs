@@ -20,16 +20,19 @@ module TTT.Controller.Minimax (
 import           Control.Monad
 import           Control.Monad.Primitive
 import           Control.Monad.Reader
+import           Data.Foldable
+import           Data.Kind
 import           Data.Ord
 import           Data.Semigroup
 import           Data.Singletons
-import           Data.Singletons.Prelude hiding     (Min, Max)
+import           Data.Singletons.Prelude hiding  (Min, Max)
 import           Data.Singletons.Sigma
+import           Data.Type.Combinator.Singletons
 import           TTT.Controller
 import           TTT.Core
 import           Type.Family.Nat
-import qualified Control.Foldl                      as F
-import qualified System.Random.MWC                  as MWC
+import qualified Control.Foldl                   as F
+import qualified System.Random.MWC               as MWC
 
 newtype RankRes (p :: Piece) = RR { getRR :: Maybe GameOver }
   deriving (Show, Eq)
@@ -87,3 +90,28 @@ minimax b r p g n = do
 
 getArg :: Arg a b -> a
 getArg (Arg x _) = x
+
+data MMTree :: N -> Piece -> Type where
+    MMLeaf :: RankRes p -> MMTree n p
+    MMNode :: [MMTree n (AltP p)] -> MMTree ('S n) p
+
+buildMMTree
+    :: forall p b n. ()
+    => Sing b
+    -> InPlay b
+    -> Sing p
+    -> GameState p b
+    -> Sing n
+    -> MMTree n p
+buildMMTree b r p g = \case
+    SZ   -> MMLeaf $ RR Nothing
+    SS n -> MMNode . toList $ go n <$> validMoves b
+  where
+    go :: Sing n' -> Move b -> MMTree n' (AltP p)
+    go n' (STuple2 i j :&: Coord i' j') = case sBoardOver b' of
+        SNothing -> buildMMTree b' InPlay (sAltP p) g' n'
+        SJust s -> MMLeaf $ RR (Just (FromSing s))
+      where
+        b' = sPlaceBoard i j p b
+        g' = play r i' j' p g
+

@@ -76,9 +76,14 @@ $(singletons [d|
   type Board = [[Maybe Piece]]
 
   emptyBoard :: Board
-  emptyBoard = [ [Nothing, Nothing, Nothing]
-               , [Nothing, Nothing, Nothing]
-               , [Nothing, Nothing, Nothing]
+  -- emptyBoard = [ [Nothing, Nothing, Nothing]
+  --              , [Nothing, Nothing, Nothing]
+  --              , [Nothing, Nothing, Nothing]
+  --              ]
+  emptyBoard = [ [Nothing, Nothing, Nothing, Nothing]
+               , [Nothing, Nothing, Nothing, Nothing]
+               , [Nothing, Nothing, Nothing, Nothing]
+               , [Nothing, Nothing, Nothing, Nothing]
                ]
 
   placeBoard :: N -> N -> Piece -> Board -> Board
@@ -146,7 +151,7 @@ data Update :: (N, N) -> Piece -> Board -> Board -> Type where
 
 -- | Last played, and current board
 data GameState :: Piece -> Board -> Type where
-    GSStart  :: GameState p EmptyBoard
+    GSStart  :: GameState 'PX EmptyBoard
     GSUpdate :: InPlay b1
              -> Update ij p        b1 b2
              -> GameState p        b1

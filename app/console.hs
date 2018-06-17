@@ -28,12 +28,15 @@ import           TTT.Core
 import           Type.Family.Nat
 import qualified System.Random.MWC             as MWC
 
-playerX :: MonadIO m => Controller m 'PX
+playerX
+    :: (MonadIO m, MonadReader (MWC.Gen (PrimState m)) m, PrimMonad m)
+    => Controller m 'PX
 playerX = consoleController
 
-playerY :: (MonadIO m, MonadReader (MWC.Gen (PrimState m)) m, PrimMonad m)
-        => Controller m 'PO
-playerY = faulty 0.1 $ minimaxController cats
+playerO
+    :: (MonadIO m, MonadReader (MWC.Gen (PrimState m)) m, PrimMonad m)
+    => Controller m 'PO
+playerO = faulty 0.0 $ minimaxController cats
   where
     cats = S (S (S (S (S Z))))
 
@@ -44,8 +47,8 @@ main :: IO ()
 main = MWC.withSystemRandom $ \g -> do
     Left (b,e) <- flip runReaderT g
                 . runExceptT
-                . chainForever (runGame playerX playerY) $
-       STuple2 sing sing :&: (GSStart @'PX, InPlay)
+                . chainForever (runGame playerX playerO) $
+       STuple2 sing sing :&: (GSStart, InPlay)
     putStrLn "Game over!"
     putStrLn $ displayBoard b
     putStrLn $ case e of
