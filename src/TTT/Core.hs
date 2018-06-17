@@ -81,6 +81,7 @@ $(singletons [d|
   Just x  <|> _ = Just x
   Nothing <|> y = y
 
+  -- TODO: write proofs for these
   winLine :: [Maybe Piece] -> Maybe Piece
   winLine []           = Nothing
   winLine (Nothing:_ ) = Nothing
@@ -96,8 +97,8 @@ $(singletons [d|
   findMaybe f (x:xs) = f x <|> findMaybe f xs
 
   boardOver :: Board -> Maybe GameOver
-  boardOver b = (GOCats <$  guard (all fullLine b)     )
-            <|> (GOWin  <$> findMaybe winLine (lines b))
+  boardOver b = (GOWin  <$> findMaybe winLine (lines b))
+            <|> (GOCats <$  guard (all fullLine b)     )
   |])
 
 -- | Witness that a given board is in play

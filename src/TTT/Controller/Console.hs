@@ -1,6 +1,7 @@
-{-# LANGUAGE PolyKinds       #-}
-{-# LANGUAGE RankNTypes      #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE PolyKinds        #-}
+{-# LANGUAGE RankNTypes       #-}
+{-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE TypeApplications #-}
 
 module TTT.Controller.Console (
     consoleController
@@ -61,12 +62,10 @@ displayBoard :: Board -> String
 displayBoard = unlines
              . ("   A   B   C ":)
              . intersperse "  ---+---+---"
-             . zipWith ((++) . addNum) [1..]
+             . zipWith (\n l -> show @Int n ++ " " ++ l) [1..]
              . map (intercalate "|" . map (pad1 . slotChar))
   where
     pad1 c = [' ', c, ' ']
     slotChar Nothing   = ' '
     slotChar (Just PX) = 'X'
     slotChar (Just PO) = 'O'
-    addNum :: Int -> String
-    addNum n = show n ++ " "
