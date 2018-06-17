@@ -29,13 +29,16 @@ dependencies:
 - type-combinators
 - containers
 - transformers
+- mtl
 - mwc-random
+- primitive
 
 library:
   source-dirs: src
   dependencies:
   - type-combinators-singletons
-  - primitive
+  - vector
+  - foldl
 
 executables:
   tic-tac-typed-console:

@@ -21,6 +21,8 @@ import           Control.Monad.Trans.Reader
 import           Data.Char
 import           Data.List
 import           Data.Singletons
+import           Control.Monad.Primitive
+import           Control.Monad.Reader
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
 import           TTT.Controller
@@ -31,34 +33,40 @@ import           Type.Family.Nat
 import qualified Data.Map                   as M
 import qualified System.Random.MWC          as MWC
 
-playerX :: Controller IO 'PX
+playerX :: MonadIO m => Controller m 'PX
 playerX = consoleController
 
-playerY :: MWC.GenIO -> Controller IO 'PO
--- playerY g = flip runReaderT g . randomController
-playerY _ = minimaxController (S (S (S Z)))
+playerY :: (MonadIO m, MonadReader (MWC.Gen (PrimState m)) m, PrimMonad m)
+        => Controller m 'PO
+-- playerY = minimaxController (S (S (S (S (S Z)))))   -- force cats
+playerY = minimaxController (S (S (S Z)))
 
-runner :: MWC.GenIO
-       -> EndoM (ExceptT (Either Piece GameOver) IO)
-                (Σ (Piece, Board) (UncurrySym1 StateInPlaySym0))
-runner g = runGame playerX (playerY g)
+data Exit = EForfeit Piece
+          | EGameOver GameOver
 
 main :: IO ()
 main = MWC.withSystemRandom $ \g -> do
-    Left s <- runExceptT . foldr (>=>) pure (repeat (runner g)) $
+    Left (b,e) <- flip runReaderT g
+                . runExceptT
+                . chainForever (runGame playerX playerY) $
        STuple2 sing sing :&: (GSStart @'PX, InPlay)
-    putStrLn $ case s of
-      Left p          -> "Forfeit by " ++ show p
-      Right GOCats    -> "Cat's game :("
-      Right (GOWin w) -> "Winner: " ++ show w
+    putStrLn "Game over!"
+    putStrLn $ displayBoard b
+    putStrLn $ case e of
+      EForfeit  p         -> "Forfeit by " ++ show p
+      EGameOver GOCats    -> "Cat's game :("
+      EGameOver (GOWin w) -> "Winner: " ++ show w
 
 type EndoM m a = a -> m a
+
+chainForever :: Monad m => EndoM m a -> EndoM m a
+chainForever f = foldr (>=>) pure (repeat f)
 
 runGame
     :: Monad m
     => Controller m 'PX
     -> Controller m 'PO
-    -> EndoM (ExceptT (Either Piece GameOver) m)
+    -> EndoM (ExceptT (Board, Exit) m)
              (Σ (Piece, Board) (UncurrySym1 StateInPlaySym0))
 runGame cX cO (STuple2 p b :&: (g, r)) = case p of
     SPX -> do
@@ -73,7 +81,7 @@ runController
     => Sing p
     -> Controller m p
     -> Σ Board (StateInPlaySym1 p)
-    -> ExceptT (Either Piece GameOver) m (Σ Board (StateInPlaySym1 (AltP p)))
+    -> ExceptT (Board, Exit) m (Σ Board (StateInPlaySym1 (AltP p)))
 runController p c (b :&: (g, r)) = do
     move <- lift $ c CC { _ccBoard = b
                         , _ccInPlay = r
@@ -81,10 +89,10 @@ runController p c (b :&: (g, r)) = do
                         , _ccPlayer = p
                         }
     case move of
-      Nothing -> throwE $ Left (FromSing p)
+      Nothing -> throwE (FromSing b, EForfeit (FromSing p))
       Just (STuple2 i j :&: Coord i' j') -> do
         let b' = sPlaceBoard i j p b
             g' = play r i' j' p g
         case sBoardOver b' of
           SNothing -> pure   $ b' :&: (g', InPlay)
-          SJust s  -> throwE $ Right (FromSing s)
+          SJust s  -> throwE (FromSing b', EGameOver (FromSing s))

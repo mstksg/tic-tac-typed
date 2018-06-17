@@ -1,30 +1,35 @@
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE GADTs           #-}
-{-# LANGUAGE LambdaCase      #-}
-{-# LANGUAGE PolyKinds       #-}
-{-# LANGUAGE RankNTypes      #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies    #-}
+{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs            #-}
+{-# LANGUAGE LambdaCase       #-}
+{-# LANGUAGE PolyKinds        #-}
+{-# LANGUAGE RankNTypes       #-}
+{-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TypeFamilies     #-}
 
 module TTT.Controller (
     Controller, Move, CContext(..)
   , priorityController
   , randomController
   , validMoves
+  , shuffledValidMoves
   ) where
 
+-- import           Control.Monad.Trans.Reader
 import           Control.Monad.IO.Class
 import           Control.Monad.Primitive
-import           Control.Monad.Trans.Reader
+import           Control.Monad.Reader
 import           Data.Foldable
 import           Data.Singletons
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           TTT.Core
 import           Type.Family.Nat
-import qualified Data.Map                   as M
-import qualified System.Random.MWC          as MWC
+import qualified Data.Map                        as M
+import qualified Data.Vector                     as V
+import qualified System.Random.MWC               as MWC
+import qualified System.Random.MWC.Distributions as MWC
 
 type Move b = Σ (N, N) (TyCon (Coord b 'Nothing))
 
@@ -45,6 +50,14 @@ validMoves b = M.fromList $ do
          , STuple2 i j :&: Coord i' j'
          )
 
+shuffledValidMoves
+    :: PrimMonad m
+    => Sing b
+    -> MWC.Gen (PrimState m)
+    -> m [((N, N), Move b)]
+shuffledValidMoves b g = V.toList
+    <$> MWC.uniformShuffle (V.fromList . M.toList . validMoves $ b) g
+
 -- | Picks the first valid move in the given list
 priorityController
     :: Applicative m
@@ -59,8 +72,8 @@ priorityController xs CC{..} = pure $ asum (map (uncurry (go _ccBoard)) xs)
 
 -- | Picks a random move
 randomController
-    :: PrimMonad m
-    => Controller (ReaderT (MWC.Gen (PrimState m)) m) p
+    :: (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
+    => Controller m p
 randomController CC{..}
     | M.null vm = pure Nothing
     | otherwise = do
