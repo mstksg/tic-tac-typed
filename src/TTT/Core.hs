@@ -156,9 +156,9 @@ pick i j b = case listSel i b of
       Disproved v -> PickOoBY i' v
     Disproved v -> PickOoBX v
 
--- | Last played, and current board
+-- | Current board and currently expected player.
 --
--- Can only be constructed by appending valid moves onto a known game
+-- Can only be constructed by appending valid moves onto a known valid game
 -- state.
 data GameState :: Piece -> Board -> Type where
     GSStart  :: GameState 'PX EmptyBoard
