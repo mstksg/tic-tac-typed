@@ -26,7 +26,7 @@ import           TTT.Controller.Console
 import           TTT.Controller.Minimax
 import           TTT.Core
 import           Type.Family.Nat
-import qualified System.Random.MWC             as MWC
+import qualified System.Random.MWC          as MWC
 
 playerX
     :: (MonadIO m, MonadReader (MWC.Gen (PrimState m)) m, PrimMonad m)

@@ -40,6 +40,8 @@ library:
   - vector
   - foldl
   - haskeline
+  - dependent-sum
+  - dependent-map
 
 executables:
   tic-tac-typed-console:
