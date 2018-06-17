@@ -15,14 +15,10 @@
 
 import           Control.Monad
 import           Control.Monad.IO.Class
-import           Control.Monad.Trans.Class
-import           Control.Monad.Trans.Except
-import           Control.Monad.Trans.Reader
-import           Data.Char
-import           Data.List
-import           Data.Singletons
 import           Control.Monad.Primitive
 import           Control.Monad.Reader
+import           Control.Monad.Trans.Except
+import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
 import           TTT.Controller
@@ -30,16 +26,16 @@ import           TTT.Controller.Console
 import           TTT.Controller.Minimax
 import           TTT.Core
 import           Type.Family.Nat
-import qualified Data.Map                   as M
-import qualified System.Random.MWC          as MWC
+import qualified System.Random.MWC             as MWC
 
 playerX :: MonadIO m => Controller m 'PX
 playerX = consoleController
 
 playerY :: (MonadIO m, MonadReader (MWC.Gen (PrimState m)) m, PrimMonad m)
         => Controller m 'PO
--- playerY = minimaxController (S (S (S (S (S Z)))))   -- force cats
-playerY = minimaxController (S (S (S Z)))
+playerY = faulty 0.1 $ minimaxController cats
+  where
+    cats = S (S (S (S (S Z))))
 
 data Exit = EForfeit Piece
           | EGameOver GameOver

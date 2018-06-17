@@ -39,6 +39,7 @@ library:
   - type-combinators-singletons
   - vector
   - foldl
+  - haskeline
 
 executables:
   tic-tac-typed-console:
@@ -50,6 +51,7 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -O2
 
 # tests:
 #   tic-tac-typed-test:

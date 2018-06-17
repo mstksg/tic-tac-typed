@@ -20,19 +20,16 @@ module TTT.Controller.Minimax (
 import           Control.Monad
 import           Control.Monad.Primitive
 import           Control.Monad.Reader
-import           Data.Kind
 import           Data.Ord
 import           Data.Semigroup
 import           Data.Singletons
-import           Data.Singletons.Prelude hiding  (Min, Max)
+import           Data.Singletons.Prelude hiding     (Min, Max)
 import           Data.Singletons.Sigma
-import           Data.Type.Combinator.Singletons
-import           Debug.Trace
 import           TTT.Controller
 import           TTT.Core
 import           Type.Family.Nat
-import qualified Control.Foldl                   as F
-import qualified System.Random.MWC               as MWC
+import qualified Control.Foldl                      as F
+import qualified System.Random.MWC                  as MWC
 
 newtype RankRes (p :: Piece) = RR { getRR :: Maybe GameOver }
   deriving (Show, Eq)

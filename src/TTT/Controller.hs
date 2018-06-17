@@ -14,10 +14,9 @@ module TTT.Controller (
   , randomController
   , validMoves
   , shuffledValidMoves
+  , faulty
   ) where
 
--- import           Control.Monad.Trans.Reader
-import           Control.Monad.IO.Class
 import           Control.Monad.Primitive
 import           Control.Monad.Reader
 import           Data.Foldable
@@ -81,4 +80,17 @@ randomController CC{..}
         pure . Just . snd $ M.elemAt i vm
   where
     vm = validMoves _ccBoard
+
+-- | Return a controller that, some percentage of the time, picks randomly
+-- instead.
+faulty
+    :: (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
+    => Double
+    -> Controller m p
+    -> Controller m p
+faulty r f cc = do
+    s <- MWC.uniform =<< ask
+    if s <= r
+      then randomController cc
+      else f cc
 

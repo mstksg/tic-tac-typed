@@ -7,7 +7,6 @@ module TTT.Controller.Console (
   , displayBoard
   ) where
 
-import           Control.Applicative
 import           Control.Monad.IO.Class
 import           Control.Monad.Trans.Maybe
 import           Data.Char
@@ -21,6 +20,7 @@ import           TTT.Controller
 import           TTT.Core
 import           Type.Family.Nat
 import qualified Data.Map                  as M
+import qualified System.Console.Haskeline  as H
 
 repeatUntil
     :: Monad m
@@ -34,7 +34,8 @@ consoleController
 consoleController CC{..} = liftIO . repeatUntil $ do
     putStrLn $ displayBoard (FromSing _ccBoard)
     putStrLn $ "Move for " ++ show (FromSing _ccPlayer)
-    l <- getLine
+    l <- fmap fold . H.runInputT H.defaultSettings $
+            H.getInputLine "> "
     case parseCoord l of
       Nothing -> case map toLower l of
         'q':_ -> pure $ Just Nothing
