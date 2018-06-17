@@ -31,10 +31,9 @@ import           Data.Singletons
 import           Data.Singletons.Prelude hiding  (Min, Max)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH hiding       (Min, Max)
-import           Data.Type.Combinator.Singletons
+import           Data.Type.Nat
 import           TTT.Controller
 import           TTT.Core
-import           Type.Family.Nat
 import qualified Control.Foldl                   as F
 import qualified Data.Dependent.Map              as DM
 import qualified Data.Vector                     as V

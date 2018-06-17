@@ -16,9 +16,9 @@ import           Data.Maybe
 import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
+import           Data.Type.Nat
 import           TTT.Controller
 import           TTT.Core
-import           Type.Family.Nat
 import qualified Data.Map                  as M
 import qualified System.Console.Haskeline  as H
 

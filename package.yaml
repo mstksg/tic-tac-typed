@@ -30,19 +30,15 @@ dependencies:
 - primitive
 - singletons
 - transformers
-- type-combinators
 
 library:
   source-dirs: src
-  other-modules:
-  - Data.Type.Sel
   dependencies:
   - containers
   - dependent-map
   - dependent-sum
   - foldl
   - haskeline
-  - type-combinators-singletons
   - vector
 
 executables:

@@ -23,8 +23,8 @@ import           Data.Foldable
 import           Data.Singletons
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
+import           Data.Type.Nat
 import           TTT.Core
-import           Type.Family.Nat
 import qualified Data.Map                        as M
 import qualified Data.Vector                     as V
 import qualified System.Random.MWC               as MWC
@@ -64,7 +64,7 @@ priorityController
     -> Controller m p
 priorityController xs CC{..} = pure $ asum (map (uncurry (go _ccBoard)) xs)
   where
-    go :: Sing b -> N -> N -> Maybe (Σ (N, N) (TyCon (Coord b 'Nothing)))
+    go :: Sing b -> N -> N -> Maybe (Move b)
     go b' (FromSing i) (FromSing j) = case pick i j b' of
       PickValid i' j' -> Just $ STuple2 i j :&: Coord i' j'
       _               -> Nothing

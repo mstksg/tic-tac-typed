@@ -35,14 +35,14 @@ resolver: nightly-2018-06-13
 #  - wai
 packages:
 - .
-- location:
-    git: https://github.com/mstksg/type-combinators.git
-    commit: 13e7d4bd99b1a80b5fdb436a85ee52cfa0ff799f
-  extra-dep: true
-- location:
-    git: https://github.com/mstksg/type-combinators-singletons.git
-    commit: 7851a2067a9ba15e25a3e1be1d75b45cc7a92552
-  extra-dep: true
+# - location:
+#     git: https://github.com/mstksg/type-combinators.git
+#     commit: 13e7d4bd99b1a80b5fdb436a85ee52cfa0ff799f
+#   extra-dep: true
+# - location:
+#     git: https://github.com/mstksg/type-combinators-singletons.git
+#     commit: 7851a2067a9ba15e25a3e1be1d75b45cc7a92552
+#   extra-dep: true
 - location:
     git: https://github.com/goldfirere/singletons.git
     commit: 56e4676f4ba68dc995cf9a644c13d489ffba366e

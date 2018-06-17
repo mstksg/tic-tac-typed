@@ -21,11 +21,11 @@ import           Control.Monad.Trans.Except
 import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
+import           Data.Type.Nat
 import           TTT.Controller
 import           TTT.Controller.Console
 import           TTT.Controller.Minimax
 import           TTT.Core
-import           Type.Family.Nat
 import qualified System.Random.MWC          as MWC
 
 playerX

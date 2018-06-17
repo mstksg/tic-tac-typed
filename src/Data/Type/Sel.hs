@@ -37,11 +37,10 @@ module Data.Type.Sel (
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
-import           Data.Singletons.Prelude hiding  (Any)
+import           Data.Singletons.Prelude hiding     (Any)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
-import           Data.Type.Combinator.Singletons
-import           Type.Family.Nat
+import           Data.Type.Nat
 
 -- | A @'Sel' n as a@ is an index into a list @as@ that the @n@th index is
 -- @a@.

@@ -56,9 +56,9 @@ import           Data.Singletons.Prelude.List
 import           Data.Singletons.Prelude.Monad
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
+import           Data.Type.Nat
 import           Data.Type.Sel
 import           Prelude hiding                (lines)
-import           Type.Family.Nat
 
 $(singletons [d|
   data Piece = PX | PO
