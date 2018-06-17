@@ -1,17 +1,10 @@
-{-# LANGUAGE FlexibleContexts       #-}
-{-# LANGUAGE GADTs                  #-}
-{-# LANGUAGE KindSignatures         #-}
-{-# LANGUAGE LambdaCase             #-}
-{-# LANGUAGE PartialTypeSignatures  #-}
-{-# LANGUAGE PolyKinds              #-}
-{-# LANGUAGE RankNTypes             #-}
-{-# LANGUAGE ScopedTypeVariables    #-}
-{-# LANGUAGE TemplateHaskell        #-}
-{-# LANGUAGE TypeApplications       #-}
-{-# LANGUAGE TypeFamilies           #-}
-{-# LANGUAGE TypeFamilyDependencies #-}
-{-# LANGUAGE TypeInType             #-}
-{-# LANGUAGE TypeOperators          #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs            #-}
+{-# LANGUAGE KindSignatures   #-}
+{-# LANGUAGE RankNTypes       #-}
+{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TypeFamilies     #-}
+{-# LANGUAGE TypeInType       #-}
 
 import           Control.Monad
 import           Control.Monad.IO.Class
@@ -19,6 +12,7 @@ import           Control.Monad.Primitive
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Except
 import           Data.Singletons
+import           Data.Singletons.TH
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
 import           Data.Type.Nat
@@ -27,6 +21,9 @@ import           TTT.Controller.Console
 import           TTT.Controller.Minimax
 import           TTT.Core
 import qualified System.Random.MWC          as MWC
+
+type StateInPlay p b = (GameState p b, InPlay b)
+genDefunSymbols [''StateInPlay]
 
 playerX
     :: (MonadIO m, MonadReader (MWC.Gen (PrimState m)) m, PrimMonad m)

@@ -1,26 +1,14 @@
-{-# LANGUAGE AllowAmbiguousTypes             #-}
-{-# LANGUAGE DataKinds                       #-}
-{-# LANGUAGE EmptyCase                       #-}
-{-# LANGUAGE FlexibleInstances               #-}
-{-# LANGUAGE GADTs                           #-}
-{-# LANGUAGE InstanceSigs                    #-}
-{-# LANGUAGE KindSignatures                  #-}
-{-# LANGUAGE LambdaCase                      #-}
-{-# LANGUAGE MultiParamTypeClasses           #-}
-{-# LANGUAGE PartialTypeSignatures           #-}
-{-# LANGUAGE PatternSynonyms                 #-}
-{-# LANGUAGE PolyKinds                       #-}
-{-# LANGUAGE RankNTypes                      #-}
-{-# LANGUAGE ScopedTypeVariables             #-}
-{-# LANGUAGE TemplateHaskell                 #-}
-{-# LANGUAGE TypeApplications                #-}
-{-# LANGUAGE TypeFamilies                    #-}
-{-# LANGUAGE TypeInType                      #-}
-{-# LANGUAGE TypeOperators                   #-}
-{-# LANGUAGE TypeSynonymInstances            #-}
-{-# LANGUAGE UndecidableInstances            #-}
-{-# LANGUAGE ViewPatterns                    #-}
-{-# OPTIONS_GHC -Wno-partial-type-signatures #-}
+{-# LANGUAGE EmptyCase            #-}
+{-# LANGUAGE FlexibleInstances    #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE InstanceSigs         #-}
+{-# LANGUAGE ScopedTypeVariables  #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeInType           #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module TTT.Core (
   -- * Data Types
@@ -35,16 +23,12 @@ module TTT.Core (
   , placeBoard, PlaceBoard, sPlaceBoard
   , boardOver, BoardOver, sBoardOver
   -- * Represent game state and updates
-  , GameState(..), Update(..), Coord(..)
+  , GameState(..), Update(..), Coord(..), InPlay(..)
   , play
   -- ** Verify
   , Pick(..), pick
-  -- ** Witnesses
-  , InPlay(..)
-  , StateInPlay
   -- * Defunctionalization Symbols
   , BoardSym0
-  , StateInPlaySym0, StateInPlaySym1, StateInPlaySym2
   ) where
 
 import           Control.Monad
@@ -166,10 +150,6 @@ data GameState :: Piece -> Board -> Type where
              -> Update ij p        b1 b2
              -> GameState p        b1
              -> GameState (AltP p)    b2
-
--- | Handy alias for a 'GameState' that is still in-play.
-type StateInPlay p b = (GameState p b, InPlay b)
-genDefunSymbols [''StateInPlay]
 
 -- | Type-safe "play".
 play

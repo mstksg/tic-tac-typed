@@ -35,8 +35,7 @@ consoleController
 consoleController CC{..} = liftIO . repeatUntil $ do
     putStrLn $ displayBoard (FromSing _ccBoard)
     putStrLn $ "Move for " ++ show (FromSing _ccPlayer)
-    ml <- H.runInputT H.defaultSettings $
-            H.getInputLine "> "
+    ml <- H.runInputT H.defaultSettings $ H.getInputLine "> "
     case ml of
       Nothing -> pure $ Just Nothing
       Just l  -> case parseCoord l of
