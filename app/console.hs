@@ -36,7 +36,7 @@ playerX = consoleController
 playerO
     :: (MonadIO m, MonadReader (MWC.Gen (PrimState m)) m, PrimMonad m)
     => Controller m 'PO
-playerO = faulty 0.0 $ minimaxController cats
+playerO = faulty 0.2 $ minimaxController cats
   where
     cats = S (S (S (S (S Z))))
 

@@ -34,17 +34,19 @@ consoleController
 consoleController CC{..} = liftIO . repeatUntil $ do
     putStrLn $ displayBoard (FromSing _ccBoard)
     putStrLn $ "Move for " ++ show (FromSing _ccPlayer)
-    l <- fmap fold . H.runInputT H.defaultSettings $
+    ml <- H.runInputT H.defaultSettings $
             H.getInputLine "> "
-    case parseCoord l of
-      Nothing -> case map toLower l of
-        'q':_ -> pure $ Just Nothing
-        _     -> Nothing <$ putStrLn "No parse. Try again. (q to quit)"
-      Just (FromSing i, FromSing j) -> case pick i j _ccBoard of
-        PickValid i' j' -> pure . Just . Just $ STuple2 i j :&: Coord i' j'
-        PickPlayed{}    -> Nothing <$ putStrLn "Spot is already played. Try again."
-        PickOoBX{}      -> Nothing <$ putStrLn "Out of bounds. Try again."
-        PickOoBY{}      -> Nothing <$ putStrLn "Out of bounds. Try again."
+    case ml of
+      Nothing -> pure $ Just Nothing
+      Just l  -> case parseCoord l of
+        Nothing -> case map toLower l of
+          'q':_ -> pure $ Just Nothing
+          _     -> Nothing <$ putStrLn "No parse. Try again. (q or Ctrl+D to quit)"
+        Just (FromSing i, FromSing j) -> case pick i j _ccBoard of
+          PickValid i' j' -> pure . Just . Just $ STuple2 i j :&: Coord i' j'
+          PickPlayed{}    -> Nothing <$ putStrLn "Spot is already played. Try again."
+          PickOoBX{}      -> Nothing <$ putStrLn "Out of bounds. Try again."
+          PickOoBY{}      -> Nothing <$ putStrLn "Out of bounds. Try again."
 
 parseCoord :: String -> Maybe (N, N)
 parseCoord (j:i:_) = (,) <$> M.lookup i rowMap <*> M.lookup (toUpper j) colMap

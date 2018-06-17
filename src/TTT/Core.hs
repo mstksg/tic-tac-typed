@@ -23,30 +23,36 @@
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 
 module TTT.Core (
-    Piece(..), SPiece()
+  -- * Data Types
+    Piece(..), SPiece
   , GameOver(..), SGameOver
   , Board, BoardSym0
   , Sing(SPX, SPO, SGOWin, SGOCats)
+  -- ** Utility functions on data types
   , altP, AltP, sAltP
   , lines, Lines, sLines
   , emptyBoard, EmptyBoard, sEmptyBoard
   , placeBoard, PlaceBoard, sPlaceBoard
   , boardOver, BoardOver, sBoardOver
-  , Pick(..), pick
-  , InPlay(..)
-  , StateInPlay, StateInPlaySym0, StateInPlaySym1, StateInPlaySym2
+  -- * Represent game state and updates
   , GameState(..), Update(..), Coord(..)
   , play
+  -- ** Verify
+  , Pick(..), pick
+  -- ** Proofs
+  , InPlay(..)
+  , StateInPlay, StateInPlaySym0, StateInPlaySym1, StateInPlaySym2
   ) where
 
+import           Control.Monad
 import           Data.Kind
 import           Data.List hiding                (lines)
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
 import           Data.Singletons.Prelude.List
+import           Data.Singletons.Prelude.Monad
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
-import           Data.Type.Combinator.Singletons
 import           Prelude hiding                  (lines)
 import           TTT.Combinator
 import           Type.Family.Nat
@@ -82,19 +88,16 @@ $(singletons [d|
                ]
 
   placeBoard :: N -> N -> Piece -> Board -> Board
-  placeBoard Z     j p (x:xs) = setIx j (Just p) x : xs
-  placeBoard (S n) j p (x:xs) =                  x : placeBoard n j p xs
+  placeBoard i j p = mapIx i (setIx j (Just p))
 
   (<|>) :: Maybe a -> Maybe a -> Maybe a
   Just x  <|> _ = Just x
   Nothing <|> y = y
 
   winLine :: [Maybe Piece] -> Maybe Piece
-  winLine [] = Nothing
-  winLine (Nothing:_) = Nothing
-  winLine (Just x:xs) = if all (== Just x) xs
-    then Just x
-    else Nothing
+  winLine []           = Nothing
+  winLine (Nothing:_ ) = Nothing
+  winLine (Just x :xs) = x <$ guard (all (== Just x) xs)
 
   fullLine :: [Maybe Piece] -> Bool
   fullLine []           = True
@@ -112,12 +115,33 @@ $(singletons [d|
                   else Nothing
   |])
 
+-- | Witness that a given board is in play
+data InPlay :: Board -> Type where
+    InPlay :: (BoardOver b ~ 'Nothing) => InPlay b
+
+-- | Represents a board and coordinate with the current item at position on
+-- the board.
+data Coord :: Board -> Maybe Piece -> (N, N) -> Type where
+    Coord :: Sel i b   row
+          -> Sel j row p
+          -> Coord b p '(i, j)
+
+-- | Represents a legal update to a board (in-bounds, and does not
+-- overwrite a played piece)
+data Update :: (N, N) -> Piece -> Board -> Board -> Type where
+    Update :: Coord b 'Nothing '(i, j)
+           -> Sing p
+           -> Update '(i, j) p b (PlaceBoard i j p b)
+
+-- | Potential results of 'pick': A verified move, or one of many failures
+-- (with proof of failures)
 data Pick :: N -> N -> Board -> Type where
     PickValid  :: Sel i b row     -> Sel j row 'Nothing  -> Pick i j b
     PickPlayed :: Sel i b row     -> Sel j row ('Just p) -> Sing p -> Pick i j b
     PickOoBX   :: OutOfBounds i b ->                        Pick i j b
     PickOoBY   :: Sel i b row     -> OutOfBounds j row   -> Pick i j b
 
+-- | Validate a pick from given coordinates on a board
 pick
     :: Sing i
     -> Sing j
@@ -131,20 +155,10 @@ pick i j b = case listSel i b of
       Disproved v -> PickOoBY i' v
     Disproved v -> PickOoBX v
 
-data InPlay :: Board -> Type where
-    InPlay :: (BoardOver b ~ 'Nothing) => InPlay b
-
-data Coord :: Board -> Maybe Piece -> (N, N) -> Type where
-    Coord :: Sel i b   row
-          -> Sel j row p
-          -> Coord b p '(i, j)
-
-data Update :: (N, N) -> Piece -> Board -> Board -> Type where
-    Update :: Coord b 'Nothing '(i, j)
-           -> Sing p
-           -> Update '(i, j) p b (PlaceBoard i j p b)
-
 -- | Last played, and current board
+--
+-- Can only be constructed by appending valid moves onto a known game
+-- state.
 data GameState :: Piece -> Board -> Type where
     GSStart  :: GameState 'PX EmptyBoard
     GSUpdate :: InPlay b1
@@ -152,9 +166,11 @@ data GameState :: Piece -> Board -> Type where
              -> GameState p        b1
              -> GameState (AltP p)    b2
 
+-- | Handy alias for a 'GameState' that is still in-play.
 type StateInPlay p b = (GameState p b, InPlay b)
 genDefunSymbols [''StateInPlay]
 
+-- | Type-safe "play".
 play
     :: forall b i j row p. ()
     => InPlay b
