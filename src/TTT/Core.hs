@@ -26,7 +26,7 @@ module TTT.Core (
   -- * Data Types
     Piece(..), SPiece
   , GameOver(..), SGameOver
-  , Board, BoardSym0
+  , Board
   , Sing(SPX, SPO, SGOWin, SGOCats)
   -- ** Utility functions on data types
   , altP, AltP, sAltP
@@ -39,22 +39,25 @@ module TTT.Core (
   , play
   -- ** Verify
   , Pick(..), pick
-  -- ** Proofs
+  -- ** Witnesses
   , InPlay(..)
-  , StateInPlay, StateInPlaySym0, StateInPlaySym1, StateInPlaySym2
+  , StateInPlay
+  -- * Defunctionalization Symbols
+  , BoardSym0
+  , StateInPlaySym0, StateInPlaySym1, StateInPlaySym2
   ) where
 
 import           Control.Monad
 import           Data.Kind
-import           Data.List hiding                (lines)
+import           Data.List hiding              (lines)
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
 import           Data.Singletons.Prelude.List
 import           Data.Singletons.Prelude.Monad
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
-import           Prelude hiding                  (lines)
-import           TTT.Combinator
+import           Data.Type.Sel
+import           Prelude hiding                (lines)
 import           Type.Family.Nat
 
 $(singletons [d|

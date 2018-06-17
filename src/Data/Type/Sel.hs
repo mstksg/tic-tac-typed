@@ -18,14 +18,20 @@
 {-# LANGUAGE ViewPatterns          #-}
 
 
-module TTT.Combinator (
-    mapIx, sMapIx, MapIx, MapIxSym0, MapIxSym1, MapIxSym2, MapIxSym3
-  , setIx, sSetIx, SetIx, SetIxSym0, SetIxSym1, SetIxSym2, SetIxSym3
-  , Sel(..), selSing
-  , overSel, mapIx_proof
-  , setSel, setIx_proof
+module Data.Type.Sel (
+    Sel(..), selSing
+  , mapIx, sMapIx, MapIx
+  , setIx, sSetIx, SetIx
+  , overSel
+  , setSel
   , listSel
   , OutOfBounds
+  -- * Proofs
+  , mapIx_proof
+  , setIx_proof
+  -- * Defunctionalization Symbols
+  , MapIxSym0, MapIxSym1, MapIxSym2, MapIxSym3
+  , SetIxSym0, SetIxSym1, SetIxSym2, SetIxSym3
   ) where
 
 import           Data.Kind
@@ -37,6 +43,8 @@ import           Data.Singletons.TH
 import           Data.Type.Combinator.Singletons
 import           Type.Family.Nat
 
+-- | A @'Sel' n as a@ is an index into a list @as@ that the @n@th index is
+-- @a@.
 data Sel :: N -> [k] -> k -> Type where
     SelZ :: Sel 'Z (a ': as) a
     SelS :: Sel n as a -> Sel ('S n) (b ': as) a

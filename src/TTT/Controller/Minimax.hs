@@ -56,6 +56,10 @@ instance SingI p => Ord (RankRes p) where
             | p == FromSing (sing @p) -> 3
             | otherwise               -> 0
 
+-- | This minimax implementation is "verified" in the sense that it cannot
+-- make any illegal moves.  We sort of get this "for free".  It is also
+-- verified that we will rank and sort the pieces correctly (assuming the
+-- Ord instance is sound) depending on who is playing.
 minimaxController
     :: (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
     => N
@@ -93,6 +97,15 @@ minimax b r p g n = do
         b' = sPlaceBoard i j p b
         g' = play r i' j' p g
 
+-- | This minimax implementation is "more verified" than the original one.
+-- In addition to the verifications of the original one, we verify that the
+-- search algorithm doesn't go further than the number of steps, and also
+-- that at each step we are being consistent with the board and possible
+-- moves.
+--
+-- However, it is not a "verified AI" in that it can still make the wrong
+-- choice in the end.  The only thing verified really is that it interprets
+-- the information it sees correctly.
 minimaxController'
     :: (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
     => N

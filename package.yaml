@@ -25,23 +25,25 @@ ghc-options:
 
 dependencies:
 - base >= 4.7 && < 5
-- singletons
-- type-combinators
-- containers
-- transformers
 - mtl
 - mwc-random
 - primitive
+- singletons
+- transformers
+- type-combinators
 
 library:
   source-dirs: src
+  other-modules:
+  - Data.Type.Sel
   dependencies:
-  - type-combinators-singletons
-  - vector
+  - containers
+  - dependent-map
+  - dependent-sum
   - foldl
   - haskeline
-  - dependent-sum
-  - dependent-map
+  - type-combinators-singletons
+  - vector
 
 executables:
   tic-tac-typed-console:

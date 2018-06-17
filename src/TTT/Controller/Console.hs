@@ -28,6 +28,7 @@ repeatUntil
     -> m a
 repeatUntil = fmap fromJust . runMaybeT . asum . repeat . MaybeT
 
+-- | Will never allow any invalid moves.
 consoleController
     :: MonadIO m
     => Controller m p
