@@ -7,6 +7,7 @@
 {-# LANGUAGE RankNTypes             #-}
 {-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE ScopedTypeVariables    #-}
+{-# LANGUAGE TemplateHaskell        #-}
 {-# LANGUAGE TypeApplications       #-}
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
@@ -14,6 +15,7 @@
 
 module TTT.Controller.Minimax (
     minimaxController
+  , minimaxController'
   , RankRes(..)
   ) where
 
@@ -27,12 +29,15 @@ import           Data.Semigroup
 import           Data.Singletons
 import           Data.Singletons.Prelude hiding  (Min, Max)
 import           Data.Singletons.Sigma
+import           Data.Singletons.TH hiding       (Min, Max)
 import           Data.Type.Combinator.Singletons
 import           TTT.Controller
 import           TTT.Core
 import           Type.Family.Nat
 import qualified Control.Foldl                   as F
+import qualified Data.Vector                     as V
 import qualified System.Random.MWC               as MWC
+import qualified System.Random.MWC.Distributions as MWC
 
 newtype RankRes (p :: Piece) = RR { getRR :: Maybe GameOver }
   deriving (Show, Eq)
@@ -60,8 +65,6 @@ minimaxController n CC{..} = do
       guard $ res /= Just (GOWin (FromSing (sAltP _ccPlayer)))
       pure m
 
--- TODO: use Tree, cata, ana?
--- TODO: if maximum is loss, forfeit
 minimax
     :: forall p b m. (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
     => Sing b
@@ -88,12 +91,43 @@ minimax b r p g n = do
         b' = sPlaceBoard i j p b
         g' = play r i' j' p g
 
-getArg :: Arg a b -> a
-getArg (Arg x _) = x
+minimaxController'
+    :: (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
+    => N
+    -> Controller m p
+minimaxController' n CC{..} = do
+    Option mm <-  minimax' _ccBoard _ccInPlay _ccPlayer _ccGameState n
+    pure $ do
+      Arg (RR res) m <- getMax <$> mm
+      guard $ res /= Just (GOWin (FromSing (sAltP _ccPlayer)))
+      pure m
 
-data MMTree :: N -> Piece -> Type where
-    MMLeaf :: RankRes p -> MMTree n p
-    MMNode :: [MMTree n (AltP p)] -> MMTree ('S n) p
+minimax'
+    :: forall p b m. (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
+    => Sing b
+    -> InPlay b
+    -> Sing p
+    -> GameState p b
+    -> N
+    -> m (Option (Max (Arg (RankRes p) (Move b))))
+minimax' b r p g (FromSing n) = fst <$> pickMMTree p mmTree
+  where
+    mmTree = buildMMTree b r p g (SS n)
+
+data SomeBranch :: N -> Board -> Piece -> (N, N) -> Type where
+    SB :: MMTree n (PlaceBoard i j p b) (AltP p)
+       -> Coord b 'Nothing '(i, j)
+       -> SomeBranch n b p '(i, j)
+
+data MMTree :: N -> Board -> Piece -> Type where
+    MMCutoff   :: (BoardOver b ~ 'Nothing)
+               => MMTree 'Z b p
+    MMGameOver :: (BoardOver b ~ 'Just s)
+               => Sing s
+               -> MMTree n b p
+    MMBranch   :: (BoardOver b ~ 'Nothing)
+               => [Σ (N, N) (TyCon (SomeBranch n b p))]
+               -> MMTree ('S n) b p
 
 buildMMTree
     :: forall p b n. ()
@@ -102,16 +136,43 @@ buildMMTree
     -> Sing p
     -> GameState p b
     -> Sing n
-    -> MMTree n p
-buildMMTree b r p g = \case
-    SZ   -> MMLeaf $ RR Nothing
-    SS n -> MMNode . toList $ go n <$> validMoves b
+    -> MMTree n b p
+buildMMTree b InPlay p g = \case
+    SZ   -> MMCutoff
+    SS n -> MMBranch . toList $ go n <$> validMoves b
   where
-    go :: Sing n' -> Move b -> MMTree n' (AltP p)
-    go n' (STuple2 i j :&: Coord i' j') = case sBoardOver b' of
+    go  :: Sing n'
+        -> Move b
+        -> Σ (N, N) (TyCon (SomeBranch n' b p))
+    go n' (STuple2 i j :&: c@(Coord i' j')) = (STuple2 i j :&:) . flip SB c $ case sBoardOver b' of
         SNothing -> buildMMTree b' InPlay (sAltP p) g' n'
-        SJust s -> MMLeaf $ RR (Just (FromSing s))
+        SJust s  -> MMGameOver s
       where
         b' = sPlaceBoard i j p b
-        g' = play r i' j' p g
+        g' = play InPlay i' j' p g
+
+pickMMTree
+    :: forall n b p m. (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
+    => Sing p
+    -> MMTree n b p
+    -> m (Option (ArgMax (RankRes p) (Move b)), Sing (BoardOver b))
+pickMMTree p = \case
+    MMCutoff     -> pure (Option Nothing, SNothing)
+    MMGameOver s -> pure (Option Nothing, SJust s )
+    MMBranch bs  -> do
+      bs' <- MWC.uniformShuffle (V.fromList bs) =<< ask
+      res <- withSingI p $
+        F.foldM (F.sink go) bs'
+      pure (res, SNothing)
+  where
+    go  :: Σ (N, N) (TyCon (SomeBranch n' b p))
+        -> m (Option (ArgMax (RankRes p) (Move b)))
+    go (ij :&: SB m c) = Option . Just . Max . flip Arg (ij :&: c) . RR <$> do
+      (Option r, o) <- pickMMTree (sAltP p) m
+      pure $ case r of
+        Just (Max (Arg (RR r') _)) -> r'
+        Nothing                    -> FromSing o
+
+getArg :: Arg a b -> a
+getArg (Arg x _) = x
 

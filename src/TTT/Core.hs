@@ -76,14 +76,9 @@ $(singletons [d|
   type Board = [[Maybe Piece]]
 
   emptyBoard :: Board
-  -- emptyBoard = [ [Nothing, Nothing, Nothing]
-  --              , [Nothing, Nothing, Nothing]
-  --              , [Nothing, Nothing, Nothing]
-  --              ]
-  emptyBoard = [ [Nothing, Nothing, Nothing, Nothing]
-               , [Nothing, Nothing, Nothing, Nothing]
-               , [Nothing, Nothing, Nothing, Nothing]
-               , [Nothing, Nothing, Nothing, Nothing]
+  emptyBoard = [ [Nothing, Nothing, Nothing]
+               , [Nothing, Nothing, Nothing]
+               , [Nothing, Nothing, Nothing]
                ]
 
   placeBoard :: N -> N -> Piece -> Board -> Board
