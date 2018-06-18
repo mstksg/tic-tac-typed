@@ -87,7 +87,7 @@ $(singletons [d|
                , [Nothing, Nothing, Nothing]
                ]
 
-  -- mapIx and setIx are verified
+  -- proofs in "TTT.Proofs"
   placeBoard :: N -> N -> Piece -> Board -> Board
   placeBoard i j p = mapIx i (setIx j (Just p))
 
@@ -106,13 +106,13 @@ $(singletons [d|
   winLine (Nothing:_ ) = Nothing
   winLine (Just x :xs) = x <$ guard (all (== Just x) xs)
 
-  -- tested in 'full_line_proof_1' and 'full_line_proof_2'
+  -- proofs in "TTT.Proofs"
   fullLine :: [Maybe Piece] -> Bool
   fullLine []           = True
   fullLine (Nothing:_ ) = False
   fullLine (Just _ :xs) = fullLine xs
 
-  -- simple property test in 'win_or_cats_proof'
+  -- proofs in "TTT.Proofs"
   boardOver :: Board -> Maybe GameOver
   boardOver b = (GOWin  <$> findMaybe winLine (lines b))
             <|> (GOCats <$  guard (all fullLine b)     )

@@ -12,7 +12,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Type.Sel (
-    Sel(..), selSing
+    Sel(..), selSing, selIx
   , mapIx, sMapIx, MapIx
   , setIx, sSetIx, SetIx
   , overSel
@@ -40,6 +40,13 @@ import           Data.Type.Nat
 data Sel :: N -> [k] -> k -> Type where
     SelZ :: Sel 'Z (a ': as) a
     SelS :: Sel n as a -> Sel ('S n) (b ': as) a
+
+selIx :: Sel n as a -> Sing as -> Sing a
+selIx = \case
+    SelZ -> \case
+      x `SCons` _  -> x
+    SelS s -> \case
+      _ `SCons` xs -> selIx s xs
 
 selSing
     :: Sel n as a
@@ -93,7 +100,8 @@ setSel = \case
       x `SCons` xs -> x `SCons` setSel n y xs
 
 setIx_proof
-    :: Sel n as a
+    :: forall n as a b. ()
+    => Sel n as a
     -> Sing as
     -> Sel n (SetIx n b as) b
 setIx_proof = \case
