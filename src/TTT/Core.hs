@@ -22,6 +22,7 @@ module TTT.Core (
   , emptyBoard, EmptyBoard, sEmptyBoard
   , placeBoard, PlaceBoard, sPlaceBoard
   , boardOver, BoardOver, sBoardOver
+  , winLine, WinLine, sWinLine
   -- * Represent game state and updates
   , GameState(..), Update(..), Coord(..), InPlay(..)
   , play
@@ -85,7 +86,13 @@ $(singletons [d|
   winLine :: [Maybe Piece] -> Maybe Piece
   winLine []           = Nothing
   winLine (Nothing:_ ) = Nothing
-  winLine (Just x :xs) = x <$ guard (all (== Just x) xs)
+  winLine (Just x :xs) = matchAll x xs
+
+  matchAll :: Piece -> [Maybe Piece] -> Maybe Piece
+  matchAll x []          = Just x
+  matchAll _ (Nothing:_) = Nothing
+  matchAll x (Just p:xs) = if x == p then matchAll x xs else Nothing
+
 
   fullLine :: [Maybe Piece] -> Bool
   fullLine []           = True
