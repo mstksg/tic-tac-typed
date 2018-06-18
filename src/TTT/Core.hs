@@ -29,6 +29,11 @@ module TTT.Core (
   , Pick(..), pick
   -- * Defunctionalization Symbols
   , BoardSym0
+  , AltPSym0, AltPSym1
+  , LinesSym0, LinesSym1
+  , EmptyBoardSym0
+  , PlaceBoardSym0, PlaceBoardSym1, PlaceBoardSym2, PlaceBoardSym3, PlaceBoardSym4
+  , BoardOverSym0, BoardOverSym1
   ) where
 
 import           Control.Monad
@@ -82,8 +87,9 @@ $(singletons [d|
   Just x  <|> _ = Just x
   Nothing <|> y = y
 
-  -- is there any way these can be verified?  the usage of functions like
-  -- (<$), guard, all make it seem less feasible.
+  -- is there any way these can be verified?  one issue is that == is prop
+  -- eq, not dec eq.  i wonder if these can be promoted and written
+  -- properly?
 
   winLine :: [Maybe Piece] -> Maybe Piece
   winLine []           = Nothing
