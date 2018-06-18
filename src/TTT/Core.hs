@@ -1,9 +1,13 @@
+{-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE EmptyCase            #-}
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE InstanceSigs         #-}
+{-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeInType           #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -34,6 +38,10 @@ module TTT.Core (
   , EmptyBoardSym0
   , PlaceBoardSym0, PlaceBoardSym1, PlaceBoardSym2, PlaceBoardSym3, PlaceBoardSym4
   , BoardOverSym0, BoardOverSym1
+  -- * Proofs
+  , full_line_proof_1
+  , full_line_proof_2
+  , win_or_cats_proof
   ) where
 
 import           Control.Monad
@@ -87,24 +95,24 @@ $(singletons [d|
   Just x  <|> _ = Just x
   Nothing <|> y = y
 
-  -- is there any way these can be verified?  one issue is that == is prop
-  -- eq, not dec eq.  i wonder if these can be promoted and written
-  -- properly?
+  findMaybe :: (a -> Maybe b) -> [a] -> Maybe b
+  findMaybe _ []     = Nothing
+  findMaybe f (x:xs) = f x <|> findMaybe f xs
 
+  -- particularly tricky to verify, because of (==) being prop eq, not dec
+  -- eq.  can this be worked around?
   winLine :: [Maybe Piece] -> Maybe Piece
   winLine []           = Nothing
   winLine (Nothing:_ ) = Nothing
   winLine (Just x :xs) = x <$ guard (all (== Just x) xs)
 
+  -- tested in 'full_line_proof_1' and 'full_line_proof_2'
   fullLine :: [Maybe Piece] -> Bool
   fullLine []           = True
   fullLine (Nothing:_ ) = False
   fullLine (Just _ :xs) = fullLine xs
 
-  findMaybe :: (a -> Maybe b) -> [a] -> Maybe b
-  findMaybe _ []     = Nothing
-  findMaybe f (x:xs) = f x <|> findMaybe f xs
-
+  -- simple property test in 'win_or_cats_proof'
   boardOver :: Board -> Maybe GameOver
   boardOver b = (GOWin  <$> findMaybe winLine (lines b))
             <|> (GOCats <$  guard (all fullLine b)     )
@@ -172,3 +180,42 @@ play
     -> GameState (AltP p) (PlaceBoard i j p b)
 play r i j p = GSUpdate r (Update (Coord i j) p)
 
+-- * Proofs
+
+type SelNothing as n = Sel n as 'Nothing
+genDefunSymbols [''SelNothing]
+
+full_line_proof_1
+    :: Sing as
+    -> Σ N (SelNothingSym1 as)
+    -> FullLine as :~: 'False
+full_line_proof_1 = \case
+    SNil -> \case _ :&: s -> case s of {}
+    SNothing `SCons` _ -> const Refl
+    SJust _  `SCons` xs -> \case
+      SZ   :&: s      -> case s of {}
+      SS n :&: SelS s -> case full_line_proof_1 xs (n :&: s) of
+        Refl -> Refl
+
+type SelJust as n p = Sel n as ('Just p)
+genDefunSymbols [''SelJust]
+
+full_line_proof_2
+    :: Sing as
+    -> (forall n. Sing n -> Σ Piece (SelJustSym2 as n))
+    -> FullLine as :~: 'True
+full_line_proof_2 = \case
+    SNil -> const Refl
+    SNothing `SCons` _ -> \w -> case w SZ of
+      _ :&: s -> case s of {}
+    SJust _ `SCons` xs -> \w -> case full_line_proof_2 xs ((\case p :&: SelS s -> p :&: s) . w . SS) of
+      Refl -> Refl
+
+-- | A quick verification that for a full board, a 3-in-a-row will take
+-- precedence over a cats result.
+win_or_cats_proof
+    :: ( FindMaybe WinLineSym0 (Lines b) ~ 'Just p
+       , All FullLineSym0 b ~ 'True
+       )
+    => BoardOver b :~: 'Just ('GOWin p)
+win_or_cats_proof = Refl
