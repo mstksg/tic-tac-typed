@@ -33,10 +33,9 @@ playerX = consoleController
 playerO
     :: (MonadIO m, MonadReader (MWC.Gen (PrimState m)) m, PrimMonad m)
     => Controller m 'PO
-playerO = consoleController
--- playerO = faulty 0.1 $ minimaxController cats
---   where
---     cats = S (S (S (S (S Z))))
+playerO = faulty 0.1 $ minimaxController cats
+  where
+    cats = S (S (S (S (S Z))))
 
 data Exit = EForfeit Piece
           | EGameOver GameOver

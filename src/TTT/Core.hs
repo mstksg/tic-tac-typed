@@ -81,7 +81,7 @@ $(singletons [d|
   Just x  <|> _ = Just x
   Nothing <|> y = y
 
-  -- TODO: write proofs for these
+  -- TODO: can we verify these? (see manual-proofs branch)
   winLine :: [Maybe Piece] -> Maybe Piece
   winLine []           = Nothing
   winLine (Nothing:_ ) = Nothing
