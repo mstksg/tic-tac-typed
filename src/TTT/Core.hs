@@ -74,6 +74,7 @@ $(singletons [d|
                , [Nothing, Nothing, Nothing]
                ]
 
+  -- mapIx and setIx are verified
   placeBoard :: N -> N -> Piece -> Board -> Board
   placeBoard i j p = mapIx i (setIx j (Just p))
 
@@ -81,7 +82,9 @@ $(singletons [d|
   Just x  <|> _ = Just x
   Nothing <|> y = y
 
-  -- TODO: can we verify these? (see manual-proofs branch)
+  -- is there any way these can be verified?  the usage of functions like
+  -- (<$), guard, all make it seem less feasible.
+
   winLine :: [Maybe Piece] -> Maybe Piece
   winLine []           = Nothing
   winLine (Nothing:_ ) = Nothing
