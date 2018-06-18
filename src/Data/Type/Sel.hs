@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE KindSignatures       #-}
 {-# LANGUAGE LambdaCase           #-}
+{-# LANGUAGE PatternSynonyms      #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TypeApplications     #-}
@@ -10,6 +11,7 @@
 {-# LANGUAGE TypeInType           #-}
 {-# LANGUAGE TypeOperators        #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ViewPatterns         #-}
 
 module Data.Type.Sel (
     Sel(..), selSing
@@ -22,9 +24,15 @@ module Data.Type.Sel (
   -- * Proofs
   , mapIx_proof
   , setIx_proof
+  -- * Index
+  , Index, SelIndex
+  , pattern IZ
+  , pattern IS
   -- * Defunctionalization Symbols
   , MapIxSym0, MapIxSym1, MapIxSym2, MapIxSym3
   , SetIxSym0, SetIxSym1, SetIxSym2, SetIxSym3
+  , IndexSym0, IndexSym1, IndexSym2
+  , SelIndexSym0, SelIndexSym1, SelIndexSym2, SelIndexSym3
   ) where
 
 import           Data.Kind
@@ -122,3 +130,19 @@ listSel = \case
         Disproved v -> Disproved $ \case
           y :&: s -> case s of
             SelS m -> v (y :&: m)
+
+type SelIndex as a n = Sel n as a
+genDefunSymbols [''SelIndex]
+
+type Index as a = Σ N (SelIndexSym2 as a)
+genDefunSymbols [''Index]
+
+pattern IZ :: Index (a ': as) a
+pattern IZ = SZ :&: SelZ
+
+pattern IS :: Index as b -> Index (a ': as) b
+pattern IS i <- ((\case SS n :&: SelS s -> n :&: s)-> i)
+  where
+    IS (n :&: s) = SS n :&: SelS s
+
+{-# COMPLETE IZ, IS #-}
