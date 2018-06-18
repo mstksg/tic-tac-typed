@@ -40,22 +40,25 @@ module TTT.Core (
   , BoardOverSym0, BoardOverSym1
   -- * Proofs
   , full_line_proof_1
+  , full_line_proof_1'
   , full_line_proof_2
+  , full_line_proof_2'
+  , full_line_proof_3
   , win_or_cats_proof
   ) where
 
 import           Control.Monad
 import           Data.Kind
-import           Data.List hiding              (lines)
+import           Data.List hiding                     (lines)
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
 import           Data.Singletons.Prelude.List
-import           Data.Singletons.Prelude.Monad
+import           Data.Singletons.Prelude.Monad hiding (Void)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Nat
 import           Data.Type.Sel
-import           Prelude hiding                (lines)
+import           Prelude hiding                       (lines)
 
 $(singletons [d|
   data Piece = PX | PO
@@ -197,19 +200,59 @@ full_line_proof_1 = \case
       SS n :&: SelS s -> case full_line_proof_1 xs (n :&: s) of
         Refl -> Refl
 
-type SelJust as n p = Sel n as ('Just p)
-genDefunSymbols [''SelJust]
+full_line_proof_1'
+    :: Sing as
+    -> FullLine as :~: 'False
+    -> Σ N (SelNothingSym1 as)
+full_line_proof_1' = \case
+    SNil -> \case {}
+    SNothing `SCons` _  -> \case
+      Refl -> SZ :&: SelZ
+    SJust _  `SCons` xs -> \case
+      Refl -> case full_line_proof_1' xs Refl of
+        n :&: s -> SS n :&: SelS s
+
+data IsJust :: Maybe k -> Type where
+    IsJust :: IsJust ('Just a)
 
 full_line_proof_2
     :: Sing as
-    -> (forall n. Sing n -> Σ Piece (SelJustSym2 as n))
+    -> (forall n a. Sel n as a -> IsJust a)
     -> FullLine as :~: 'True
 full_line_proof_2 = \case
     SNil -> const Refl
-    SNothing `SCons` _ -> \w -> case w SZ of
-      _ :&: s -> case s of {}
-    SJust _ `SCons` xs -> \w -> case full_line_proof_2 xs ((\case p :&: SelS s -> p :&: s) . w . SS) of
+    SNothing `SCons` _ -> \w -> case w SelZ of {}
+    SJust _ `SCons` xs -> \w -> case full_line_proof_2 xs (w . SelS) of
       Refl -> Refl
+
+full_line_proof_2'
+    :: Sing as
+    -> FullLine as :~: 'True
+    -> Sel n as a
+    -> IsJust a
+full_line_proof_2' = \case
+    SNil -> \case
+      Refl -> \case {}
+    SNothing `SCons` _ -> \case {}
+    SJust _ `SCons` xs -> \case
+      Refl -> \case
+        SelZ   -> IsJust
+        SelS s -> case full_line_proof_2' xs Refl s of
+          IsJust -> IsJust
+
+full_line_proof_3
+    :: Sing as
+    -> (forall n a. Sel n as a -> IsJust a)
+    -> Σ N (SelNothingSym1 as)
+    -> Void
+full_line_proof_3 = \case
+    SNil -> \_ -> \case
+      _ :&: s -> case s of {}
+    SNothing `SCons` _ -> \f -> \case
+      _ :&: s -> case f s of {}
+    SJust _ `SCons` xs -> \f -> \case
+      SZ   :&: s      -> case s of {}
+      SS n :&: SelS s -> full_line_proof_3 xs (f . SelS) (n :&: s)
 
 -- | A quick verification that for a full board, a 3-in-a-row will take
 -- precedence over a cats result.
