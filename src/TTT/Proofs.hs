@@ -14,6 +14,10 @@
 
 module TTT.Proofs (
     place_board_proof
+  , IsJustP(..)
+  , win_line_proof
+  , all_matching_proof
+  , IsJust(..)
   , full_line_proof_1
   , full_line_proof_1'
   , full_line_proof_2
@@ -32,89 +36,8 @@ import           Data.Type.Nat
 import           Data.Type.Sel
 import           TTT.Core
 
-
-  -- -- particularly tricky to verify, because of (==) being prop eq, not dec
-  -- -- eq.  can this be worked around?
-  -- winLine :: [Maybe Piece] -> Maybe Piece
-  -- winLine []           = Nothing
-  -- winLine (Nothing:_ ) = Nothing
-  -- winLine (Just x :xs) = x <$ guard (all (== Just x) xs)
-
-
--- type WinAt as p n = (Sel n as ('Just p))
-
-data NotNull :: [k] -> Type where
-    NotNull :: NotNull (a ': as)
-
-data AllPred :: (k ~> Type) -> [k] -> Type where
-    AP :: (forall a n. Sel n as a -> f @@ a)
-       -> AllPred f as
-
 type IsTrue f x = (f @@ x) :~: 'True
 genDefunSymbols [''IsTrue]
-
-all_proof
-    :: forall k (as :: [k]) (f :: k ~> Bool). ()
-    => Sing as
-    -> Sing f
-    -> AllPred (IsTrueSym1 f) as
-    -> All f as :~: 'True
-all_proof _ _ _ = undefined
--- all_proof = \case
---     SNil -> \_ _ -> Refl
---     x `SCons` xs -> \f (AP a) -> case f @@ x of
---       STrue  -> case all_proof xs f (AP (a . SelS)) of
---         Refl -> _
---       SFalse -> case a SelZ of {}
-      
--- case f SelZ of
---       Refl -> case all_proof xs (AP ())
-
-type EqualJustP p x = (x == 'Just p) :~: 'True
-genDefunSymbols [''EqualJustP]
-
--- win_line_proof
---     :: Sing as
---     -> Sing p
---     -> (AllPred (EqualJustPSym1 p) as, NotNull as)
---     -> WinLine as :~: 'Just p
--- win_line_proof = \case
---     SNil -> \_ (_, nn)   -> case nn of {}
---     SNothing `SCons` _ -> \_ (AP f, _) -> case f SelZ of {}
---     SJust x `SCons` xs -> \p (AP f, _) ->
---       case (x %== p, x %~ p) of
---         (STrue, Disproved _) -> error "mismatch between == and ~"
---         (STrue, Proved Refl) -> case all_proof xs _ (AP (_ . f . SelS)) of
---           Refl -> Refl
--- -- all_proof
--- --     :: forall k (as :: [k]) (f :: k ~> Bool). ()
--- --     => Sing as
--- --     -> Sing f
--- --     -> AllPred (IsTrueSym1 f) as
--- --     -> All f as :~: 'True
--- -- all_proof _ _ _ = undefined
---         -- (STrue, Proved Refl)  -> case xs of
---         --   SNil -> Refl
---         --   _ `SCons` _ -> case win_line_proof xs x (AP (f . SelS), NotNull) of
---         --     Refl -> Refl
---             -- Disproved _ -> error "mismatch between == and ~"
---           -- _ `SCons` _ -> case win_line_proof xs (AP (f . SelS), NotNull) of
---             -- Refl -> Refl
---         (SFalse, _) -> case f SelZ of {}
-
-        -- Proved Refl -> Refl
-        -- Disproved
-    -- SJust x `SCons` xs -> \(AP f, _) -> case f SelZ
-  
-    -- case f SelZ of
-    --   Refl -> Refl
-
--- win_line_proof
---     :: Sing as
---     -> WinLine as a :~: 'Just p
---     -> Σ N (Sel n as ('Just p)
-
-
 
 place_board_proof
     :: forall i j b p a. ()
@@ -125,6 +48,51 @@ place_board_proof (Coord i j) b = Coord i' j'
   where
     i' = mapIx_proof @i @b @_ @(SetIxSym2 j ('Just p)) i b
     j' = setIx_proof @j @_ @a @('Just p)               j (selIx i b)
+
+
+data IsJustP :: Piece -> Maybe Piece -> Type where
+    IsJustP :: ((p == q) ~ 'True) => IsJustP p ('Just q)
+
+data PropDec :: k -> k -> Type where
+    PDEq  :: ((a == b) ~ 'True, a ~ b)
+          => PropDec a b
+    PDNEq :: ((a == b) ~ 'False)
+          => Refuted (a :~: b)
+          -> PropDec a b
+
+propDecPiece :: SPiece p -> SPiece q -> PropDec p q
+propDecPiece = \case
+    SPX -> \case
+      SPX -> PDEq
+      SPO -> PDNEq $ \case {}
+    SPO -> \case
+      SPX -> PDNEq $ \case {}
+      SPO -> PDEq
+
+win_line_proof
+    :: Sing (a ': as)
+    -> Sing p
+    -> (forall n b. Sel n (a ': as) b -> IsJustP p b)
+    -> WinLine (a ': as) :~: 'Just p
+win_line_proof = \case
+    SNothing `SCons` _ -> \_ f -> case f SelZ of {}
+    SJust x `SCons` xs -> \p f -> case propDecPiece p x of
+      PDEq -> case all_matching_proof x xs (f . SelS) of
+        Refl -> Refl
+      PDNEq _ -> case f SelZ of {}
+
+all_matching_proof
+    :: Sing p
+    -> Sing as
+    -> (forall n a. Sel n as a -> IsJustP p a)
+    -> AllMatching p as :~: 'Just p
+all_matching_proof x = \case
+    SNil -> const Refl
+    SNothing `SCons` _ -> \f -> case f SelZ of {}
+    SJust y `SCons` xs -> \f -> case propDecPiece x y of
+      PDEq -> case all_matching_proof y xs (f . SelS) of
+        Refl -> Refl
+      PDNEq _ -> case f SelZ of {}
 
 type SelNothing as n = Sel n as 'Nothing
 genDefunSymbols [''SelNothing]

@@ -32,6 +32,7 @@ module TTT.Core (
   , fullLine, FullLine, sFullLine
   , findMaybe, FindMaybe, sFindMaybe
   , winLine, WinLine, sWinLine
+  , allMatching, AllMatching, sAllMatching
   -- * Defunctionalization Symbols
   , BoardSym0
   , AltPSym0, AltPSym1
@@ -42,11 +43,12 @@ module TTT.Core (
   , FullLineSym0, FullLineSym1
   , FindMaybeSym0, FindMaybeSym1, FindMaybeSym2
   , WinLineSym0, WinLineSym1
+  , AllMatchingSym0, AllMatchingSym1, AllMatchingSym2
   ) where
 
 import           Control.Monad
 import           Data.Kind
-import           Data.List hiding              (lines)
+import           Data.List hiding                      (lines)
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude
 import           Data.Singletons.Prelude.List
@@ -55,7 +57,7 @@ import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Nat
 import           Data.Type.Sel
-import           Prelude hiding                (lines)
+import           Prelude hiding                        (lines)
 
 $(singletons [d|
   data Piece = PX | PO
@@ -99,12 +101,17 @@ $(singletons [d|
   findMaybe _ []     = Nothing
   findMaybe f (x:xs) = f x <|> findMaybe f xs
 
-  -- particularly tricky to verify, because of (==) being prop eq, not dec
-  -- eq.  can this be worked around?
   winLine :: [Maybe Piece] -> Maybe Piece
-  winLine []           = Nothing
-  winLine (Nothing:_ ) = Nothing
-  winLine (Just x :xs) = x <$ guard (all (== Just x) xs)
+  winLine []     = Nothing
+  winLine (Nothing:xs) = Nothing
+  winLine (Just x :xs) = allMatching x xs
+
+  allMatching :: Piece -> [Maybe Piece] -> Maybe Piece
+  allMatching x []           = Just x
+  allMatching _ (Nothing:_ ) = Nothing
+  allMatching x (Just y :ys) = if x == y
+     then mfilter (== x) (allMatching y ys)
+     else Nothing
 
   -- proofs in "TTT.Proofs"
   fullLine :: [Maybe Piece] -> Bool
