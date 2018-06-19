@@ -15,8 +15,12 @@
 module TTT.Proofs (
     place_board_proof
   , IsJustP(..)
-  , win_line_proof
-  , all_matching_proof
+  , win_line_proof_1
+  , win_line_proof_1'
+  , win_line_proof_2
+  , all_matching_proof_1
+  , all_matching_proof_1'
+  , all_matching_proof_2
   , IsJust(..)
   , full_line_proof_1
   , full_line_proof_1'
@@ -60,6 +64,9 @@ data PropDec :: k -> k -> Type where
           => Refuted (a :~: b)
           -> PropDec a b
 
+type SelNothing as n = Sel n as 'Nothing
+genDefunSymbols [''SelNothing]
+
 propDecPiece :: SPiece p -> SPiece q -> PropDec p q
 propDecPiece = \case
     SPX -> \case
@@ -69,33 +76,95 @@ propDecPiece = \case
       SPX -> PDNEq $ \case {}
       SPO -> PDEq
 
-win_line_proof
+win_line_proof_1
     :: Sing (a ': as)
     -> Sing p
     -> (forall n b. Sel n (a ': as) b -> IsJustP p b)
     -> WinLine (a ': as) :~: 'Just p
-win_line_proof = \case
+win_line_proof_1 = \case
     SNothing `SCons` _ -> \_ f -> case f SelZ of {}
     SJust x `SCons` xs -> \p f -> case propDecPiece p x of
-      PDEq -> case all_matching_proof x xs (f . SelS) of
+      PDEq -> case all_matching_proof_1 x xs (f . SelS) of
         Refl -> Refl
       PDNEq _ -> case f SelZ of {}
 
-all_matching_proof
+win_line_proof_1'
+    :: Sing (a ': as)
+    -> Sing p
+    -> (WinLine (a ': as) :~: 'Just p)
+    -> Sel n (a ': as) b
+    -> IsJustP p b
+win_line_proof_1' = \case
+    SNothing `SCons` _  -> \_ -> \case {}
+    SJust _  `SCons` xs -> \y -> \case
+      Refl -> \case
+        SelZ -> undefined       -- !!
+        SelS s -> case all_matching_proof_1' y xs undefined s of     -- !!
+          IsJustP -> IsJustP
+
+win_line_proof_2
+    :: Sing as
+    -> Σ N (SelNothingSym1 as)
+    -> WinLine as :~: 'Nothing
+win_line_proof_2 = \case
+    SNil -> \_ -> Refl
+    SNothing `SCons` _ -> \_ -> Refl
+    SJust x `SCons` xs -> \case
+      SZ   :&: s      -> case s of {}
+      SS n :&: SelS s -> case all_matching_proof_2 x xs (n :&: s) of
+        Refl -> Refl
+
+all_matching_proof_1
     :: Sing p
     -> Sing as
     -> (forall n a. Sel n as a -> IsJustP p a)
     -> AllMatching p as :~: 'Just p
-all_matching_proof x = \case
+all_matching_proof_1 x = \case
     SNil -> const Refl
     SNothing `SCons` _ -> \f -> case f SelZ of {}
     SJust y `SCons` xs -> \f -> case propDecPiece x y of
-      PDEq -> case all_matching_proof y xs (f . SelS) of
+      PDEq -> case all_matching_proof_1 y xs (f . SelS) of
         Refl -> Refl
       PDNEq _ -> case f SelZ of {}
 
-type SelNothing as n = Sel n as 'Nothing
-genDefunSymbols [''SelNothing]
+all_matching_proof_1'
+    :: forall p as n a. ()
+    => Sing p
+    -> Sing as
+    -> AllMatching p as :~: 'Just p
+    -> Sel n as a
+    -> IsJustP p a
+all_matching_proof_1' x = \case
+    SNil -> \case
+      Refl -> \case {}
+    SNothing `SCons` _ -> \case {}
+    SJust y `SCons` xs -> case propDecPiece x y of
+      PDEq -> \case
+        Refl -> \case
+          SelZ -> IsJustP
+          SelS s -> case all_matching_proof_1' y xs undefined s of  -- !!
+            IsJustP -> IsJustP
+      PDNEq _ -> \case {}
+
+all_matching_proof_2
+    :: Sing p
+    -> Sing as
+    -> Σ N (SelNothingSym1 as)
+    -> AllMatching p as :~: 'Nothing
+all_matching_proof_2 x = \case
+    SNil -> \case 
+      _ :&: s -> case s of {}
+    SNothing `SCons` ys -> \case
+      SZ :&: SelZ -> Refl
+      SS n :&: SelS s -> case all_matching_proof_2 x ys (n :&: s) of
+        Refl -> Refl
+    SJust y `SCons` ys -> \case
+        SZ   :&: s      -> case s of {}
+        SS n :&: SelS s -> case propDecPiece x y of
+          PDEq    -> case all_matching_proof_2 y ys (n :&: s) of
+            Refl -> Refl
+          PDNEq _ -> case all_matching_proof_2 y ys (n :&: s) of
+            Refl -> Refl
 
 -- | If there is a blank spot on the board, 'FullLine' must be 'False'.
 full_line_proof_1

@@ -101,17 +101,19 @@ $(singletons [d|
   findMaybe _ []     = Nothing
   findMaybe f (x:xs) = f x <|> findMaybe f xs
 
+  -- proofs in "TTT.Proofs"
   winLine :: [Maybe Piece] -> Maybe Piece
   winLine []     = Nothing
-  winLine (Nothing:xs) = Nothing
+  winLine (Nothing:_ ) = Nothing
   winLine (Just x :xs) = allMatching x xs
 
+  -- proofs in "TTT.Proofs"
   allMatching :: Piece -> [Maybe Piece] -> Maybe Piece
   allMatching x []           = Just x
   allMatching _ (Nothing:_ ) = Nothing
-  allMatching x (Just y :ys) = if x == y
-     then mfilter (== x) (allMatching y ys)
-     else Nothing
+  allMatching x (Just y :ys) = do
+     guard (x == y)
+     mfilter (== x) $ allMatching y ys
 
   -- proofs in "TTT.Proofs"
   fullLine :: [Maybe Piece] -> Bool
