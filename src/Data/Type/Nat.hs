@@ -14,7 +14,10 @@
 
 module Data.Type.Nat (
     N(..), SN, Sing(SZ, SS)
+  , addN, AddN, sAddN
+  -- * Defun
   , ZSym0, SSym0, SSym1
+  , AddNSym0, AddNSym1, AddNSym2
   ) where
 
 import           Data.Singletons
@@ -23,4 +26,11 @@ import           Data.Singletons.TH
 $(singletons [d|
   data N = Z | S N
     deriving (Show, Eq, Ord)
+
+
+  addN :: N -> N -> N
+  addN Z     m = m
+  addN (S n) m = S (addN n m)
   |])
+
+

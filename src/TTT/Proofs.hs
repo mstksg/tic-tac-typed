@@ -14,6 +14,10 @@
 
 module TTT.Proofs (
     place_board_proof
+  , IsJustP(..)
+  , win_line_proof
+  , all_matching_proof
+  , IsJust(..)
   , full_line_proof_1
   , full_line_proof_1'
   , full_line_proof_2
@@ -32,6 +36,9 @@ import           Data.Type.Nat
 import           Data.Type.Sel
 import           TTT.Core
 
+type IsTrue f x = (f @@ x) :~: 'True
+genDefunSymbols [''IsTrue]
+
 place_board_proof
     :: forall i j b p a. ()
     => Coord b a '(i, j)
@@ -41,6 +48,51 @@ place_board_proof (Coord i j) b = Coord i' j'
   where
     i' = mapIx_proof @i @b @_ @(SetIxSym2 j ('Just p)) i b
     j' = setIx_proof @j @_ @a @('Just p)               j (selIx i b)
+
+
+data IsJustP :: Piece -> Maybe Piece -> Type where
+    IsJustP :: ((p == q) ~ 'True) => IsJustP p ('Just q)
+
+data PropDec :: k -> k -> Type where
+    PDEq  :: ((a == b) ~ 'True, a ~ b)
+          => PropDec a b
+    PDNEq :: ((a == b) ~ 'False)
+          => Refuted (a :~: b)
+          -> PropDec a b
+
+propDecPiece :: SPiece p -> SPiece q -> PropDec p q
+propDecPiece = \case
+    SPX -> \case
+      SPX -> PDEq
+      SPO -> PDNEq $ \case {}
+    SPO -> \case
+      SPX -> PDNEq $ \case {}
+      SPO -> PDEq
+
+win_line_proof
+    :: Sing (a ': as)
+    -> Sing p
+    -> (forall n b. Sel n (a ': as) b -> IsJustP p b)
+    -> WinLine (a ': as) :~: 'Just p
+win_line_proof = \case
+    SNothing `SCons` _ -> \_ f -> case f SelZ of {}
+    SJust x `SCons` xs -> \p f -> case propDecPiece p x of
+      PDEq -> case all_matching_proof x xs (f . SelS) of
+        Refl -> Refl
+      PDNEq _ -> case f SelZ of {}
+
+all_matching_proof
+    :: Sing p
+    -> Sing as
+    -> (forall n a. Sel n as a -> IsJustP p a)
+    -> AllMatching p as :~: 'Just p
+all_matching_proof x = \case
+    SNil -> const Refl
+    SNothing `SCons` _ -> \f -> case f SelZ of {}
+    SJust y `SCons` xs -> \f -> case propDecPiece x y of
+      PDEq -> case all_matching_proof y xs (f . SelS) of
+        Refl -> Refl
+      PDNEq _ -> case f SelZ of {}
 
 type SelNothing as n = Sel n as 'Nothing
 genDefunSymbols [''SelNothing]
