@@ -15,11 +15,13 @@
 module Data.Type.Nat (
     N(..), SN, Sing(SZ, SS)
   , addN, AddN, sAddN
+  , LT(..)
   -- * Defun
   , ZSym0, SSym0, SSym1
   , AddNSym0, AddNSym1, AddNSym2
   ) where
 
+import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.TH
 
@@ -33,4 +35,6 @@ $(singletons [d|
   addN (S n) m = S (addN n m)
   |])
 
-
+data LT :: N -> N -> Type where
+    LTZ :: LT 'Z n
+    LTS :: LT n m -> LT ('S n) ('S m)

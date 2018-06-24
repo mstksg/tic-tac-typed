@@ -22,28 +22,29 @@ module TTT.Core (
   , lines, Lines, sLines
   , emptyBoard, EmptyBoard, sEmptyBoard
   , placeBoard, PlaceBoard, sPlaceBoard
-  , boardOver, BoardOver, sBoardOver
+  -- , boardOver, BoardOver, sBoardOver
   -- * Represent game state and updates
   , GameState(..), Update(..), Coord(..), InPlay(..)
   , play
+  , GameMode(..), SomeGameMode, gameMode
   -- ** Verify
   , Pick(..), pick
   -- * Utility functions
-  , fullLine, FullLine, sFullLine
-  , findMaybe, FindMaybe, sFindMaybe
-  , winLine, WinLine, sWinLine
-  , allMatching, AllMatching, sAllMatching
+  -- , fullLine, FullLine, sFullLine
+  -- , findMaybe, FindMaybe, sFindMaybe
+  -- , winLine, WinLine, sWinLine
+  -- , allMatching, AllMatching, sAllMatching
   -- * Defunctionalization Symbols
   , BoardSym0
   , AltPSym0, AltPSym1
   , LinesSym0, LinesSym1
   , EmptyBoardSym0
   , PlaceBoardSym0, PlaceBoardSym1, PlaceBoardSym2, PlaceBoardSym3, PlaceBoardSym4
-  , BoardOverSym0, BoardOverSym1
-  , FullLineSym0, FullLineSym1
-  , FindMaybeSym0, FindMaybeSym1, FindMaybeSym2
-  , WinLineSym0, WinLineSym1
-  , AllMatchingSym0, AllMatchingSym1, AllMatchingSym2
+  -- , BoardOverSym0, BoardOverSym1
+  -- , FullLineSym0, FullLineSym1
+  -- , FindMaybeSym0, FindMaybeSym1, FindMaybeSym2
+  -- , WinLineSym0, WinLineSym1
+  -- , AllMatchingSym0, AllMatchingSym1, AllMatchingSym2
   ) where
 
 import           Control.Monad
@@ -93,43 +94,57 @@ $(singletons [d|
   placeBoard :: N -> N -> Piece -> Board -> Board
   placeBoard i j p = mapIx i (setIx j (Just p))
 
-  (<|>) :: Maybe a -> Maybe a -> Maybe a
-  Just x  <|> _ = Just x
-  Nothing <|> y = y
+  -- (<|>) :: Maybe a -> Maybe a -> Maybe a
+  -- Just x  <|> _ = Just x
+  -- Nothing <|> y = y
 
-  findMaybe :: (a -> Maybe b) -> [a] -> Maybe b
-  findMaybe _ []     = Nothing
-  findMaybe f (x:xs) = f x <|> findMaybe f xs
+  -- findMaybe :: (a -> Maybe b) -> [a] -> Maybe b
+  -- findMaybe _ []     = Nothing
+  -- findMaybe f (x:xs) = f x <|> findMaybe f xs
 
-  -- proofs in "TTT.Proofs"
-  winLine :: [Maybe Piece] -> Maybe Piece
-  winLine []     = Nothing
-  winLine (Nothing:_ ) = Nothing
-  winLine (Just x :xs) = allMatching x xs
+  -- -- proofs in "TTT.Proofs"
+  -- winLine :: [Maybe Piece] -> Maybe Piece
+  -- winLine []     = Nothing
+  -- winLine (Nothing:_ ) = Nothing
+  -- winLine (Just x :xs) = allMatching x xs
 
-  -- proofs in "TTT.Proofs"
-  allMatching :: Piece -> [Maybe Piece] -> Maybe Piece
-  allMatching x []           = Just x
-  allMatching _ (Nothing:_ ) = Nothing
-  allMatching x (Just y :ys) = do
-     guard (x == y)
-     mfilter (== x) $ allMatching y ys
+  -- -- proofs in "TTT.Proofs"
+  -- allMatching :: Piece -> [Maybe Piece] -> Maybe Piece
+  -- allMatching x []           = Just x
+  -- allMatching _ (Nothing:_ ) = Nothing
+  -- allMatching x (Just y :ys) = do
+  --    guard (x == y)
+  --    mfilter (== x) $ allMatching y ys
 
-  -- proofs in "TTT.Proofs"
-  fullLine :: [Maybe Piece] -> Bool
-  fullLine []           = True
-  fullLine (Nothing:_ ) = False
-  fullLine (Just _ :xs) = fullLine xs
+  -- -- proofs in "TTT.Proofs"
+  -- fullLine :: [Maybe Piece] -> Bool
+  -- fullLine []           = True
+  -- fullLine (Nothing:_ ) = False
+  -- fullLine (Just _ :xs) = fullLine xs
 
-  -- proofs in "TTT.Proofs"
-  boardOver :: Board -> Maybe GameOver
-  boardOver b = (GOWin  <$> findMaybe winLine (lines b))
-            <|> (GOCats <$  guard (all fullLine b)     )
+  -- -- proofs in "TTT.Proofs"
+  -- boardOver :: Board -> Maybe GameOver
+  -- boardOver b = (GOWin  <$> findMaybe winLine (lines b))
+  --           <|> (GOCats <$  guard (all fullLine b)     )
   |])
 
--- | Witness that a given board is in play
-data InPlay :: Board -> Type where
-    InPlay :: (BoardOver b ~ 'Nothing) => InPlay b
+data GameMode :: Board -> Maybe GameOver -> Type where
+    GMOver   :: GameMode b ('Just p)
+    GMInPlay :: GameMode b 'Nothing
+
+type SomeGameMode b = Σ (Maybe GameOver) (TyCon (GameMode b))
+
+gameMode :: Sing b -> SomeGameMode b
+gameMode _ = SNothing :&: GMInPlay
+
+type InPlay b = GameMode b 'Nothing
+
+-- data InPlay :: Board -> Type where
+--     InPlay :: 
+
+-- -- | Witness that a given board is in play
+-- data InPlay :: Board -> Type where
+--     InPlay :: (BoardOver b ~ 'Nothing) => InPlay b
 
 -- | Represents a board and coordinate with the current item at position on
 -- the board.

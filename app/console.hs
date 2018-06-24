@@ -45,7 +45,7 @@ main = MWC.withSystemRandom $ \g -> do
     Left (b,e) <- flip runReaderT g
                 . runExceptT
                 . chainForever (runGame playerX playerO) $
-       STuple2 sing sing :&: (GSStart, InPlay)
+       STuple2 sing sing :&: (GSStart, GMInPlay)
     putStrLn "Game over!"
     putStrLn $ displayBoard b
     putStrLn $ case e of
@@ -89,6 +89,6 @@ runController p c (b :&: (g, r)) = do
       Just (STuple2 i j :&: Coord i' j') -> do
         let b' = sPlaceBoard i j p b
             g' = play r i' j' p g
-        case sBoardOver b' of
-          SNothing -> pure   $ b' :&: (g', InPlay)
-          SJust s  -> throwE (FromSing b', EGameOver (FromSing s))
+        case gameMode b' of
+          SNothing :&: _ -> pure   $ b' :&: (g', GMInPlay)
+          SJust s  :&: _ -> throwE (FromSing b', EGameOver (FromSing s))
