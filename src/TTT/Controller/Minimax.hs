@@ -85,10 +85,10 @@ minimax b r p g n = do
     go :: Move b -> m (Option (Max (Arg (RankRes p) (Move b))))
     go m@(STuple2 i j :&: Coord i' j') = do
       res <- case gameMode b' of
-        SNothing :&: _ -> case n of
+        SNothing :&: gm -> case n of
           Z    -> pure @m . pure @Option $ Nothing
           S n' -> fmap (getRR . getArg . getMax) <$>
-            minimax b' GMInPlay (sAltP p) g' n'
+            minimax b' gm (sAltP p) g' n'
         SJust s :&: _ -> pure @m . pure @Option $ Just (FromSing s)
       pure $ Max . flip Arg m . RR <$> res
       where
@@ -150,22 +150,19 @@ buildMMTree
     -> GameState p b
     -> Sing n
     -> MMTree n b p
-buildMMTree b GMInPlay p g = \case
-    SZ   -> MMCutoff GMInPlay
-    SS n -> MMBranch GMInPlay . DM.fromAscList . toList $ go n <$> validMoves b
+buildMMTree b gm@(GMInPlay _ _) p g = \case
+    SZ   -> MMCutoff gm
+    SS n -> MMBranch gm . DM.fromAscList . toList $ go n <$> validMoves b
   where
     go  :: Sing n'
         -> Move b
         -> DM.DSum Sing (SomeBranch n' b p)
     go n' (STuple2 i j :&: c@(Coord i' j')) = (STuple2 i j DM.:=>) . flip SB c $ case gameMode b' of
-        SNothing :&: _ -> buildMMTree b' GMInPlay (sAltP p) g' n'
-        SJust s  :&: _ -> MMGameOver GMOver s
-                                                -- (STuple2 i j DM.:=>) . flip SB c $ case sBoardOver b' of
-        -- SNothing -> buildMMTree b' InPlay (sAltP p) g' n'
-        -- SJust s  -> MMGameOver GMOver s
+        SNothing :&: m -> buildMMTree b' m (sAltP p) g' n'
+        SJust s  :&: m -> MMGameOver m s
       where
         b' = sPlaceBoard i j p b
-        g' = play GMInPlay i' j' p g
+        g' = play gm i' j' p g
 
 pickMMTree
     :: forall n b p m. (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
