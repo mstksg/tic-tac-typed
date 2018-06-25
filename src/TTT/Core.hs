@@ -40,16 +40,15 @@ module TTT.Core (
   , GOWinSym0, GOWinSym1, GOCatsSym0
   ) where
 
-import           Control.Monad
 import           Data.Kind
 import           Data.List hiding                    (lines, all, any)
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude hiding      (All, Any)
 import           Data.Singletons.Prelude.List hiding (All, Any)
-import           Data.Singletons.Prelude.Monad hiding (Void)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Nat
+import           Data.Type.Predicate
 import           Data.Type.Sel
 import           Prelude hiding                      (lines, all, any)
 
@@ -88,12 +87,6 @@ $(singletons [d|
   placeBoard i j p = mapIx i (setIx j (Just p))
   |])
 
-data All :: (k ~> Type) -> [k] -> Type where
-    All :: (forall a n. Sel n as a -> f @@ a) -> All f as
-
-data Any :: (k ~> Type) -> [k] -> Type where
-    Any :: Sel n as a -> f @@ a -> Any f as
-
 data Victory :: Piece -> [Maybe Piece] -> Type where
     Victory :: All (TyCon ((:~:) ('Just p))) as
             -> Victory p ('Just p ': as)
@@ -101,15 +94,15 @@ data Victory :: Piece -> [Maybe Piece] -> Type where
 type AnyVictory b p = Any (TyCon (Victory p)) (Lines b)
 genDefunSymbols [''AnyVictory]
 
-data IsJust :: Maybe Piece -> Type where
-    IsJust :: IsJust ('Just p)
+data IsPlayed :: Maybe Piece -> Type where
+    IsPlayed :: IsPlayed ('Just p)
 
-isJust :: Sing a -> Decision (IsJust a)
-isJust = \case
+isPlayed :: Sing a -> Decision (IsPlayed a)
+isPlayed = \case
     SNothing -> Disproved $ \case {}
-    SJust _  -> Proved IsJust
+    SJust _  -> Proved IsPlayed
 
-type AllFull b = All (TyCon1 (All (TyCon1 IsJust))) b
+type AllFull b = All (TyCon1 (All (TyCon1 IsPlayed))) b
 
 data GameMode :: Board -> Maybe GameOver -> Type where
     GMVictory :: AnyVictory b p
@@ -122,43 +115,6 @@ data GameMode :: Board -> Maybe GameOver -> Type where
               -> GameMode b 'Nothing
 
 type SomeGameMode b = Σ (Maybe GameOver) (TyCon (GameMode b))
-
-all :: forall k (f :: k ~> Type) (as :: [k]). ()
-    => (forall a. Sing a -> Decision (f @@ a))
-    -> Sing as
-    -> Decision (All f as)
-all f = go
-  where
-    go :: Sing bs -> Decision (All f bs)
-    go = \case
-      SNil -> Proved $ All $ \case {}
-      x `SCons` xs -> case f x of
-        Proved p -> case go xs of
-          Proved (All ps) -> Proved $ All $ \case
-            SelZ   -> p
-            SelS s -> ps s
-          Disproved v -> Disproved $ \case
-            All ps -> v (All (ps . SelS))
-        Disproved v -> Disproved $ \case
-          All ps -> v (ps SelZ)
-
-any :: forall f as. ()
-    => (forall a. Sing a -> Decision (f @@ a))
-    -> Sing as
-    -> Decision (Any f as)
-any f = go
-  where
-    go :: Sing bs -> Decision (Any f bs)
-    go = \case
-      SNil -> Disproved $ \case
-        Any s _ -> case s of {}
-      x `SCons` xs -> case f x of
-        Proved p    -> Proved $ Any SelZ p
-        Disproved r -> case go xs of
-          Proved (Any s p) -> Proved $ Any (SelS s) p
-          Disproved rs -> Disproved $ \case
-            Any SelZ     p -> r  p
-            Any (SelS s) p -> rs (Any s p)
 
 type SomeVictory as = Σ Piece (FlipSym2 (TyCon Victory) as)
 genDefunSymbols [''SomeVictory]
@@ -176,7 +132,7 @@ someVictory = \case
       Proved p -> Proved $ x :&: Victory p
       Disproved r -> Disproved $ \case
         _ :&: Victory (All f) -> r (All f)
-  
+
 anyVictory
     :: forall (b :: [[Maybe Piece]]). ()
     => Sing b
@@ -189,7 +145,7 @@ anyVictory b = case any @SomeVictorySym0 someVictory (sLines b) of
 gameMode :: forall b. Sing b -> SomeGameMode b
 gameMode b = case anyVictory b of
     Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
-    Disproved r -> case all (all @_ @(TyCon1 IsJust) isJust) b of
+    Disproved r -> case all (all @_ @(TyCon1 IsPlayed) isPlayed) b of
       Proved (c :: AllFull b) -> SJust SGOCats :&: GMCats r c
       Disproved r' -> SNothing :&: GMInPlay r r'
 
