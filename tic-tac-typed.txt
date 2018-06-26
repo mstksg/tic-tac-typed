@@ -121,6 +121,7 @@ sPlaceBoard :: forall (t_aQCh :: N) (t_aQCi :: N) (t_aQCj :: Piece) (t_aQCk :: [
 data GameState :: Piece -> Board -> Type
 [GSStart] :: GameState  'PX EmptyBoard
 [GSUpdate] :: InPlay b1 -> Update ij p b1 b2 -> GameState p b1 -> GameState (AltP p) b2
+type AnyVictory b p = Any (TyCon (Victory p)) (Lines b)
 
 -- | Represents a legal update to a board (in-bounds, and does not
 --   overwrite a played piece)
@@ -153,6 +154,9 @@ data Pick :: N -> N -> Board -> Type
 
 -- | Validate a pick from given coordinates on a board
 pick :: Sing i -> Sing j -> Sing b -> Pick i j b
+data GOWinSym0 :: (~>) Piece GameOver
+type GOWinSym1 (t6989586621679211976 :: Piece) = GOWin t6989586621679211976
+type GOCatsSym0 = GOCats
 type BoardSym0 = Board
 data AltPSym0 :: (~>) Piece Piece
 type AltPSym1 (a6989586621679211999 :: Piece) = AltP a6989586621679211999
@@ -164,9 +168,9 @@ data PlaceBoardSym1 (a6989586621679211978 :: N) :: (~>) N ((~>) Piece ((~>) [[Ma
 data PlaceBoardSym2 (a6989586621679211978 :: N) (a6989586621679211979 :: N) :: (~>) Piece ((~>) [[Maybe Piece]] [[Maybe Piece]])
 data PlaceBoardSym3 (a6989586621679211978 :: N) (a6989586621679211979 :: N) (a6989586621679211980 :: Piece) :: (~>) [[Maybe Piece]] [[Maybe Piece]]
 type PlaceBoardSym4 (a6989586621679211978 :: N) (a6989586621679211979 :: N) (a6989586621679211980 :: Piece) (a6989586621679211981 :: [[Maybe Piece]]) = PlaceBoard a6989586621679211978 a6989586621679211979 a6989586621679211980 a6989586621679211981
-data GOWinSym0 :: (~>) Piece GameOver
-type GOWinSym1 (t6989586621679211976 :: Piece) = GOWin t6989586621679211976
-type GOCatsSym0 = GOCats
+data AnyVictorySym0 b6989586621679212219
+data AnyVictorySym1 (b6989586621679212219 :: [[a6989586621679214620]]) p6989586621679212220
+type AnyVictorySym2 (b6989586621679212219 :: [[a6989586621679214620]]) (p6989586621679212220 :: Piece) = AnyVictory b6989586621679212219 p6989586621679212220
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.SomeVictorySym0
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.AnyVictorySym0
 instance forall a6989586621679214620 (b6989586621679212219 :: [[a6989586621679214620]]). Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.AnyVictorySym1 b6989586621679212219)
