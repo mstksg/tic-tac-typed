@@ -48,8 +48,9 @@ import           Data.Singletons.Prelude.List hiding (All, Any)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Nat
-import           Data.Type.Predicate
+import           Data.Type.Quantification
 import           Data.Type.Sel
+import           Data.Type.Universe
 import           Prelude hiding                      (lines, all, any)
 
 $(singletons [d|
@@ -128,7 +129,7 @@ someVictory = \case
       _ :&: v -> case v of {}
     SNothing `SCons` _ -> Disproved $ \case
       _ :&: v -> case v of {}
-    mx@(SJust x) `SCons` xs -> case all (mx %~) xs of
+    mx@(SJust x) `SCons` xs -> case decideAll (const (mx %~)) xs of
       Proved p -> Proved $ x :&: Victory p
       Disproved r -> Disproved $ \case
         _ :&: Victory (All f) -> r (All f)
@@ -137,7 +138,7 @@ anyVictory
     :: forall (b :: [[Maybe Piece]]). ()
     => Sing b
     -> Decision (Σ Piece (AnyVictorySym1 b))
-anyVictory b = case any @SomeVictorySym0 someVictory (sLines b) of
+anyVictory b = case decideAny @[] @_ @SomeVictorySym0 (const someVictory) (sLines b) of
     Proved (Any s (p :&: v)) -> Proved $ p :&: Any s v
     Disproved r -> Disproved $ \case
       p :&: Any s v -> r $ Any s (p :&: v)
@@ -145,7 +146,7 @@ anyVictory b = case any @SomeVictorySym0 someVictory (sLines b) of
 gameMode :: forall b. Sing b -> SomeGameMode b
 gameMode b = case anyVictory b of
     Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
-    Disproved r -> case all (all @_ @(TyCon1 IsPlayed) isPlayed) b of
+    Disproved r -> case decideAll (\_ -> decideAll @[] @_ @(TyCon1 IsPlayed) (const isPlayed)) b of
       Proved (c :: AllFull b) -> SJust SGOCats :&: GMCats r c
       Disproved r' -> SNothing :&: GMInPlay r r'
 
@@ -203,10 +204,10 @@ startInPlay = GMInPlay noVictor noCats
   where
     noVictor :: Refuted (Σ Piece (AnyVictorySym1 EmptyBoard))
     noVictor (_ :&: Any s (Victory _)) = case s of
-      SelS (SelS (SelS (SelS (SelS (SelS (SelS (SelS t))))))) -> case t of {}
+      IS (IS (IS (IS (IS (IS (IS (IS t))))))) -> case t of {}
     noCats :: Refuted (AllFull EmptyBoard)
-    noCats (All f) = case f SelZ of
-                       All g -> case g SelZ of
+    noCats (All f) = case f IZ of
+                       All g -> case g IZ of
                          {}
 
 -- | Type-safe "play".

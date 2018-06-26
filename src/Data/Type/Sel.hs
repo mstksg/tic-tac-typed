@@ -21,16 +21,16 @@ module Data.Type.Sel (
   , setSel
   , listSel
   , OutOfBounds
-  -- * Index
-  , Index, SomeSel, pattern IZ, pattern IS
+  -- -- * Index
+  -- , Index, SomeSel, pattern IZ, pattern IS
   -- * Proofs
   , mapIx_proof
   , setIx_proof
   -- * Defunctionalization Symbols
   , MapIxSym0, MapIxSym1, MapIxSym2, MapIxSym3
   , SetIxSym0, SetIxSym1, SetIxSym2, SetIxSym3
-  , IndexSym0, IndexSym1, IndexSym2
-  , SomeSelSym0, SomeSelSym1, SomeSelSym2, SomeSelSym3
+  -- , IndexSym0, IndexSym1, IndexSym2
+  -- , SomeSelSym0, SomeSelSym1, SomeSelSym2, SomeSelSym3
   ) where
 
 import           Data.Kind
@@ -137,16 +137,16 @@ listSel = \case
           y :&: s -> case s of
             SelS m -> v (y :&: m)
 
-type SomeSel as a n = Sel n as a
-genDefunSymbols [''SomeSel]
+-- type SomeSel as a n = Sel n as a
+-- genDefunSymbols [''SomeSel]
 
-type Index as a = Σ N (SomeSelSym2 as a)
-genDefunSymbols [''Index]
+-- type Index as a = Σ N (SomeSelSym2 as a)
+-- genDefunSymbols [''Index]
 
-pattern IZ :: Index (a ': as) a
-pattern IZ = SZ :&: SelZ
+-- pattern IZ :: Index (a ': as) a
+-- pattern IZ = SZ :&: SelZ
 
-pattern IS :: Index as b -> Index (a ': as) b
-pattern IS ns <- ((\case SS n :&: SelS s -> n :&: s)->ns)
-  where
-    IS (n :&: s) = SS n :&: SelS s
+-- pattern IS :: Index as b -> Index (a ': as) b
+-- pattern IS ns <- ((\case SS n :&: SelS s -> n :&: s)->ns)
+--   where
+--     IS (n :&: s) = SS n :&: SelS s
