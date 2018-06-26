@@ -129,7 +129,7 @@ someVictory = \case
       _ :&: v -> case v of {}
     SNothing `SCons` _ -> Disproved $ \case
       _ :&: v -> case v of {}
-    mx@(SJust x) `SCons` xs -> case decideAll (const (mx %~)) xs of
+    mx@(SJust x) `SCons` xs -> case decideAll' (mx %~) xs of
       Proved p -> Proved $ x :&: Victory p
       Disproved r -> Disproved $ \case
         _ :&: Victory (All f) -> r (All f)
@@ -138,7 +138,7 @@ anyVictory
     :: forall (b :: [[Maybe Piece]]). ()
     => Sing b
     -> Decision (Σ Piece (AnyVictorySym1 b))
-anyVictory b = case decideAny @[] @_ @SomeVictorySym0 (const someVictory) (sLines b) of
+anyVictory b = case decideAny' @[] @_ @SomeVictorySym0 someVictory (sLines b) of
     Proved (Any s (p :&: v)) -> Proved $ p :&: Any s v
     Disproved r -> Disproved $ \case
       p :&: Any s v -> r $ Any s (p :&: v)
@@ -146,7 +146,7 @@ anyVictory b = case decideAny @[] @_ @SomeVictorySym0 (const someVictory) (sLine
 gameMode :: forall b. Sing b -> SomeGameMode b
 gameMode b = case anyVictory b of
     Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
-    Disproved r -> case decideAll (\_ -> decideAll @[] @_ @(TyCon1 IsPlayed) (const isPlayed)) b of
+    Disproved r -> case decideAll' (decideAll' @[] @_ @(TyCon1 IsPlayed) isPlayed) b of
       Proved (c :: AllFull b) -> SJust SGOCats :&: GMCats r c
       Disproved r' -> SNothing :&: GMInPlay r r'
 
