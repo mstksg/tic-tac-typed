@@ -25,23 +25,24 @@ module TTT.Core (
   , emptyBoard, EmptyBoard, sEmptyBoard
   , placeBoard, PlaceBoard, sPlaceBoard
   -- * Represent game state and updates
-  , GameState(..), Update(..), Coord(..), InPlay, startInPlay
+  , GameState(..), AnyVictory
+  , Update(..), Coord(..), InPlay, startInPlay
   , play
   , GameMode(..), SomeGameMode, gameMode
   -- ** Verify
   , Pick(..), pick
-  -- * Utility functions
   -- * Defunctionalization Symbols
+  , GOWinSym0, GOWinSym1, GOCatsSym0
   , BoardSym0
   , AltPSym0, AltPSym1
   , LinesSym0, LinesSym1
   , EmptyBoardSym0
   , PlaceBoardSym0, PlaceBoardSym1, PlaceBoardSym2, PlaceBoardSym3, PlaceBoardSym4
-  , GOWinSym0, GOWinSym1, GOCatsSym0
+  , AnyVictorySym0, AnyVictorySym1, AnyVictorySym2
   ) where
 
 import           Data.Kind
-import           Data.List hiding                    (lines, all, any)
+import           Data.List hiding                    (lines)
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude hiding      (All, Any)
 import           Data.Singletons.Prelude.List hiding (All, Any)
@@ -51,7 +52,7 @@ import           Data.Type.Nat
 import           Data.Type.Quantification
 import           Data.Type.Sel
 import           Data.Type.Universe
-import           Prelude hiding                      (lines, all, any)
+import           Prelude hiding                      (lines)
 
 $(singletons [d|
   data Piece = PX | PO
