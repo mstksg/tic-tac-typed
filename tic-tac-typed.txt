@@ -15,28 +15,28 @@ type SN = (Sing :: N -> Type)
 
 -- | The singleton kind-indexed data family.
 addN :: N -> N -> N
-sAddN :: forall (t_ancQ :: N) (t_ancR :: N). Sing t_ancQ -> Sing t_ancR -> Sing (Apply (Apply AddNSym0 t_ancQ) t_ancR :: N)
+sAddN :: forall (t_andW :: N) (t_andX :: N). Sing t_andW -> Sing t_andX -> Sing (Apply (Apply AddNSym0 t_andW) t_andX :: N)
 data LT :: N -> N -> Type
 [LTZ] :: LT  'Z n
 [LTS] :: LT n m -> LT ( 'S n) ( 'S m)
 type ZSym0 = Z
 data SSym0 :: (~>) N N
-type SSym1 (t6989586621679093322 :: N) = S t6989586621679093322
+type SSym1 (t6989586621679093390 :: N) = S t6989586621679093390
 data AddNSym0 :: (~>) N ((~>) N N)
-data AddNSym1 (a6989586621679093324 :: N) :: (~>) N N
-type AddNSym2 (a6989586621679093324 :: N) (a6989586621679093325 :: N) = AddN a6989586621679093324 a6989586621679093325
+data AddNSym1 (a6989586621679093392 :: N) :: (~>) N N
+type AddNSym2 (a6989586621679093392 :: N) (a6989586621679093393 :: N) = AddN a6989586621679093392 a6989586621679093393
 instance GHC.Classes.Ord Data.Type.Nat.N
 instance GHC.Classes.Eq Data.Type.Nat.N
 instance GHC.Show.Show Data.Type.Nat.N
 instance Data.Singletons.Prelude.Eq.PEq Data.Type.Nat.N
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings Data.Type.Nat.Compare_6989586621679098990Sym0
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings Data.Type.Nat.Compare_6989586621679099058Sym0
 instance Data.Singletons.Prelude.Ord.POrd Data.Type.Nat.N
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Nat.Compare_6989586621679098990Sym1 a6989586621679098988)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings Data.Type.Nat.ShowsPrec_6989586621679097093Sym0
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Nat.Compare_6989586621679099058Sym1 a6989586621679099056)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings Data.Type.Nat.ShowsPrec_6989586621679097161Sym0
 instance Data.Singletons.Prelude.Show.PShow Data.Type.Nat.N
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Nat.ShowsPrec_6989586621679097093Sym1 a6989586621679097090)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Nat.ShowsPrec_6989586621679097093Sym2 a6989586621679097091 a6989586621679097090)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Nat.AddNSym1 a6989586621679093324)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Nat.ShowsPrec_6989586621679097161Sym1 a6989586621679097158)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Nat.ShowsPrec_6989586621679097161Sym2 a6989586621679097159 a6989586621679097158)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Nat.AddNSym1 a6989586621679093392)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings Data.Type.Nat.AddNSym0
 instance Data.Singletons.Internal.SingI Data.Type.Nat.AddNSym0
 instance Data.Singletons.Internal.SingI d => Data.Singletons.Internal.SingI (Data.Type.Nat.AddNSym1 d)
@@ -60,34 +60,32 @@ module Data.Type.Sel
 data Sel :: N -> [k] -> k -> Type
 [SelZ] :: Sel  'Z (a : as) a
 [SelS] :: Sel n as a -> Sel ( 'S n) (b : as) a
-selSing :: Sel n as a -> Sing n
-selIx :: Sel n as a -> Sing as -> Sing a
-mapIx :: N -> (a_aLSn -> a_aLSn) -> [a_aLSn] -> [a_aLSn]
-sMapIx :: forall a_aLSn (t_aLTF :: N) (t_aLTG :: (~>) a_aLSn a_aLSn) (t_aLTH :: [a_aLSn]). Sing t_aLTF -> Sing t_aLTG -> Sing t_aLTH -> Sing (Apply (Apply (Apply MapIxSym0 t_aLTF) t_aLTG) t_aLTH :: [a_aLSn])
-setIx :: N -> a_aLSm -> [a_aLSm] -> [a_aLSm]
-sSetIx :: forall a_aLSm (t_aLTL :: N) (t_aLTM :: a_aLSm) (t_aLTN :: [a_aLSm]). Sing t_aLTL -> Sing t_aLTM -> Sing t_aLTN -> Sing (Apply (Apply (Apply SetIxSym0 t_aLTL) t_aLTM) t_aLTN :: [a_aLSm])
+mapIx :: N -> (a_aLRD -> a_aLRD) -> [a_aLRD] -> [a_aLRD]
+sMapIx :: forall a_aLRD (t_aLSV :: N) (t_aLSW :: (~>) a_aLRD a_aLRD) (t_aLSX :: [a_aLRD]). Sing t_aLSV -> Sing t_aLSW -> Sing t_aLSX -> Sing (Apply (Apply (Apply MapIxSym0 t_aLSV) t_aLSW) t_aLSX :: [a_aLRD])
+setIx :: N -> a_aLRC -> [a_aLRC] -> [a_aLRC]
+sSetIx :: forall a_aLRC (t_aLT1 :: N) (t_aLT2 :: a_aLRC) (t_aLT3 :: [a_aLRC]). Sing t_aLT1 -> Sing t_aLT2 -> Sing t_aLT3 -> Sing (Apply (Apply (Apply SetIxSym0 t_aLT1) t_aLT2) t_aLT3 :: [a_aLRC])
 overSel :: forall k n (as :: [k]) (a :: k) (f :: k ~> k). () => Sel n as a -> Sing f -> Sing as -> Sing (MapIx n f as)
 setSel :: forall k n (as :: [k]) (a :: k) (b :: k). () => Sel n as a -> Sing b -> Sing as -> Sing (SetIx n b as)
 listSel :: forall k n (as :: [k]). () => Sing n -> Sing as -> Decision (Σ k (TyCon (Sel n as)))
 type OutOfBounds n (as :: [k]) = Refuted (Σ k (TyCon (Sel n as)))
 mapIx_proof :: forall n as a f. () => Sel n as a -> Sing as -> Sel n (MapIx n f as) (f @@ a)
 setIx_proof :: forall n as a b. () => Sel n as a -> Sing as -> Sel n (SetIx n b as) b
-data MapIxSym0 :: forall a6989586621679193831. (~>) N ((~>) ((~>) a6989586621679193831 a6989586621679193831) ((~>) [a6989586621679193831] [a6989586621679193831]))
-data MapIxSym1 (a6989586621679193887 :: N) :: forall a6989586621679193831. (~>) ((~>) a6989586621679193831 a6989586621679193831) ((~>) [a6989586621679193831] [a6989586621679193831])
-data MapIxSym2 (a6989586621679193887 :: N) (a6989586621679193888 :: (~>) a6989586621679193831 a6989586621679193831) :: (~>) [a6989586621679193831] [a6989586621679193831]
-type MapIxSym3 (a6989586621679193887 :: N) (a6989586621679193888 :: (~>) a6989586621679193831 a6989586621679193831) (a6989586621679193889 :: [a6989586621679193831]) = MapIx a6989586621679193887 a6989586621679193888 a6989586621679193889
-data SetIxSym0 :: forall a6989586621679193830. (~>) N ((~>) a6989586621679193830 ((~>) [a6989586621679193830] [a6989586621679193830]))
-data SetIxSym1 (a6989586621679193900 :: N) :: forall a6989586621679193830. (~>) a6989586621679193830 ((~>) [a6989586621679193830] [a6989586621679193830])
-data SetIxSym2 (a6989586621679193900 :: N) (a6989586621679193901 :: a6989586621679193830) :: (~>) [a6989586621679193830] [a6989586621679193830]
-type SetIxSym3 (a6989586621679193900 :: N) (a6989586621679193901 :: a6989586621679193830) (a6989586621679193902 :: [a6989586621679193830]) = SetIx a6989586621679193900 a6989586621679193901 a6989586621679193902
+data MapIxSym0 :: forall a6989586621679193785. (~>) N ((~>) ((~>) a6989586621679193785 a6989586621679193785) ((~>) [a6989586621679193785] [a6989586621679193785]))
+data MapIxSym1 (a6989586621679193841 :: N) :: forall a6989586621679193785. (~>) ((~>) a6989586621679193785 a6989586621679193785) ((~>) [a6989586621679193785] [a6989586621679193785])
+data MapIxSym2 (a6989586621679193841 :: N) (a6989586621679193842 :: (~>) a6989586621679193785 a6989586621679193785) :: (~>) [a6989586621679193785] [a6989586621679193785]
+type MapIxSym3 (a6989586621679193841 :: N) (a6989586621679193842 :: (~>) a6989586621679193785 a6989586621679193785) (a6989586621679193843 :: [a6989586621679193785]) = MapIx a6989586621679193841 a6989586621679193842 a6989586621679193843
+data SetIxSym0 :: forall a6989586621679193784. (~>) N ((~>) a6989586621679193784 ((~>) [a6989586621679193784] [a6989586621679193784]))
+data SetIxSym1 (a6989586621679193854 :: N) :: forall a6989586621679193784. (~>) a6989586621679193784 ((~>) [a6989586621679193784] [a6989586621679193784])
+data SetIxSym2 (a6989586621679193854 :: N) (a6989586621679193855 :: a6989586621679193784) :: (~>) [a6989586621679193784] [a6989586621679193784]
+type SetIxSym3 (a6989586621679193854 :: N) (a6989586621679193855 :: a6989586621679193784) (a6989586621679193856 :: [a6989586621679193784]) = SetIx a6989586621679193854 a6989586621679193855 a6989586621679193856
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings Data.Type.Sel.SetIxSym0
 instance Data.Singletons.Internal.SingI Data.Type.Sel.SetIxSym0
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Sel.SetIxSym1 a6989586621679193900 a6989586621679193830)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Sel.SetIxSym1 a6989586621679193854 a6989586621679193784)
 instance Data.Singletons.Internal.SingI d => Data.Singletons.Internal.SingI (Data.Type.Sel.SetIxSym1 d a)
-instance forall a6989586621679193830 (a6989586621679193901 :: Data.Type.Nat.N) (a6989586621679193900 :: a6989586621679193830). Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Sel.SetIxSym2 a6989586621679193901 a6989586621679193900)
+instance forall a6989586621679193784 (a6989586621679193855 :: Data.Type.Nat.N) (a6989586621679193854 :: a6989586621679193784). Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Sel.SetIxSym2 a6989586621679193855 a6989586621679193854)
 instance forall a (d1 :: Data.Type.Nat.N) (d2 :: a). (Data.Singletons.Internal.SingI d1, Data.Singletons.Internal.SingI d2) => Data.Singletons.Internal.SingI (Data.Type.Sel.SetIxSym2 d1 d2)
-instance forall a6989586621679193831 (a6989586621679193888 :: Data.Type.Nat.N) (a6989586621679193887 :: a6989586621679193831 Data.Singletons.Internal.~> a6989586621679193831). Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Sel.MapIxSym2 a6989586621679193888 a6989586621679193887)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Sel.MapIxSym1 a6989586621679193887 a6989586621679193831)
+instance forall a6989586621679193785 (a6989586621679193842 :: Data.Type.Nat.N) (a6989586621679193841 :: a6989586621679193785 Data.Singletons.Internal.~> a6989586621679193785). Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Sel.MapIxSym2 a6989586621679193842 a6989586621679193841)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Sel.MapIxSym1 a6989586621679193841 a6989586621679193785)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings Data.Type.Sel.MapIxSym0
 instance Data.Singletons.Internal.SingI Data.Type.Sel.MapIxSym0
 instance Data.Singletons.Internal.SingI d => Data.Singletons.Internal.SingI (Data.Type.Sel.MapIxSym1 d a)
@@ -106,13 +104,13 @@ type Board = [[Maybe Piece]]
 
 -- | The singleton kind-indexed data family.
 altP :: Piece -> Piece
-sAltP :: forall (t_aQCt :: Piece). Sing t_aQCt -> Sing (Apply AltPSym0 t_aQCt :: Piece)
-lines :: [[a_aPU1]] -> [[a_aPU1]]
-sLines :: forall a_aPU1 (t_aQCr :: [[a_aPU1]]). Sing t_aQCr -> Sing (Apply LinesSym0 t_aQCr :: [[a_aPU1]])
+sAltP :: forall (t_aQBT :: Piece). Sing t_aQBT -> Sing (Apply AltPSym0 t_aQBT :: Piece)
+lines :: [[a_aPSy]] -> [[a_aPSy]]
+sLines :: forall a_aPSy (t_aQBR :: [[a_aPSy]]). Sing t_aQBR -> Sing (Apply LinesSym0 t_aQBR :: [[a_aPSy]])
 emptyBoard :: Board
 sEmptyBoard :: Sing (EmptyBoardSym0 :: [[Maybe Piece]])
 placeBoard :: N -> N -> Piece -> Board -> Board
-sPlaceBoard :: forall (t_aQCh :: N) (t_aQCi :: N) (t_aQCj :: Piece) (t_aQCk :: [[Maybe Piece]]). Sing t_aQCh -> Sing t_aQCi -> Sing t_aQCj -> Sing t_aQCk -> Sing (Apply (Apply (Apply (Apply PlaceBoardSym0 t_aQCh) t_aQCi) t_aQCj) t_aQCk :: [[Maybe Piece]])
+sPlaceBoard :: forall (t_aQBH :: N) (t_aQBI :: N) (t_aQBJ :: Piece) (t_aQBK :: [[Maybe Piece]]). Sing t_aQBH -> Sing t_aQBI -> Sing t_aQBJ -> Sing t_aQBK -> Sing (Apply (Apply (Apply (Apply PlaceBoardSym0 t_aQBH) t_aQBI) t_aQBJ) t_aQBK :: [[Maybe Piece]])
 
 -- | Current board and currently expected player.
 --   
@@ -121,7 +119,7 @@ sPlaceBoard :: forall (t_aQCh :: N) (t_aQCi :: N) (t_aQCj :: Piece) (t_aQCk :: [
 data GameState :: Piece -> Board -> Type
 [GSStart] :: GameState  'PX EmptyBoard
 [GSUpdate] :: InPlay b1 -> Update ij p b1 b2 -> GameState p b1 -> GameState (AltP p) b2
-type AnyVictory b p = Any (TyCon (Victory p)) (Lines b)
+data AnyVictory b :: Piece ~> Type
 
 -- | Represents a legal update to a board (in-bounds, and does not
 --   overwrite a played piece)
@@ -133,14 +131,16 @@ data Update :: (N, N) -> Piece -> Board -> Board -> Type
 data Coord :: Board -> Maybe Piece -> (N, N) -> Type
 [Coord] :: Sel i b row -> Sel j row p -> Coord b p '(i, j)
 type InPlay b = GameMode b  'Nothing
+
+-- | The empty board is in-play.
 startInPlay :: InPlay EmptyBoard
 
 -- | Type-safe "play".
 play :: forall b i j row p. () => InPlay b -> Sel i b row -> Sel j row  'Nothing -> Sing p -> GameState p b -> GameState (AltP p) (PlaceBoard i j p b)
 data GameMode :: Board -> Maybe GameOver -> Type
-[GMVictory] :: AnyVictory b p -> GameMode b ( 'Just ( 'GOWin p))
-[GMCats] :: Refuted (Σ Piece (AnyVictorySym1 b)) -> AllFull b -> GameMode b ( 'Just  'GOCats)
-[GMInPlay] :: Refuted (Σ Piece (AnyVictorySym1 b)) -> Refuted (AllFull b) -> GameMode b  'Nothing
+[GMVictory] :: AnyVictory b @@ p -> GameMode b ( 'Just ( 'GOWin p))
+[GMCats] :: Refuted (Σ Piece (AnyVictory b)) -> AllFull b -> GameMode b ( 'Just  'GOCats)
+[GMInPlay] :: Refuted (Σ Piece (AnyVictory b)) -> Refuted (AllFull b) -> GameMode b  'Nothing
 type SomeGameMode b = Σ (Maybe GameOver) (TyCon (GameMode b))
 gameMode :: forall b. Sing b -> SomeGameMode b
 
@@ -155,39 +155,35 @@ data Pick :: N -> N -> Board -> Type
 -- | Validate a pick from given coordinates on a board
 pick :: Sing i -> Sing j -> Sing b -> Pick i j b
 data GOWinSym0 :: (~>) Piece GameOver
-type GOWinSym1 (t6989586621679211976 :: Piece) = GOWin t6989586621679211976
+type GOWinSym1 (t6989586621679211940 :: Piece) = GOWin t6989586621679211940
 type GOCatsSym0 = GOCats
 type BoardSym0 = Board
 data AltPSym0 :: (~>) Piece Piece
-type AltPSym1 (a6989586621679211999 :: Piece) = AltP a6989586621679211999
-data LinesSym0 :: forall a6989586621679209309. (~>) [[a6989586621679209309]] [[a6989586621679209309]]
-type LinesSym1 (a6989586621679211996 :: [[a6989586621679209309]]) = Lines a6989586621679211996
+type AltPSym1 (a6989586621679211963 :: Piece) = AltP a6989586621679211963
+data LinesSym0 :: forall a6989586621679209218. (~>) [[a6989586621679209218]] [[a6989586621679209218]]
+type LinesSym1 (a6989586621679211960 :: [[a6989586621679209218]]) = Lines a6989586621679211960
 type EmptyBoardSym0 = EmptyBoard
 data PlaceBoardSym0 :: (~>) N ((~>) N ((~>) Piece ((~>) [[Maybe Piece]] [[Maybe Piece]])))
-data PlaceBoardSym1 (a6989586621679211978 :: N) :: (~>) N ((~>) Piece ((~>) [[Maybe Piece]] [[Maybe Piece]]))
-data PlaceBoardSym2 (a6989586621679211978 :: N) (a6989586621679211979 :: N) :: (~>) Piece ((~>) [[Maybe Piece]] [[Maybe Piece]])
-data PlaceBoardSym3 (a6989586621679211978 :: N) (a6989586621679211979 :: N) (a6989586621679211980 :: Piece) :: (~>) [[Maybe Piece]] [[Maybe Piece]]
-type PlaceBoardSym4 (a6989586621679211978 :: N) (a6989586621679211979 :: N) (a6989586621679211980 :: Piece) (a6989586621679211981 :: [[Maybe Piece]]) = PlaceBoard a6989586621679211978 a6989586621679211979 a6989586621679211980 a6989586621679211981
-data AnyVictorySym0 b6989586621679212219
-data AnyVictorySym1 (b6989586621679212219 :: [[a6989586621679214620]]) p6989586621679212220
-type AnyVictorySym2 (b6989586621679212219 :: [[a6989586621679214620]]) (p6989586621679212220 :: Piece) = AnyVictory b6989586621679212219 p6989586621679212220
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.SomeVictorySym0
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.AnyVictorySym0
-instance forall a6989586621679214620 (b6989586621679212219 :: [[a6989586621679214620]]). Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.AnyVictorySym1 b6989586621679212219)
+data PlaceBoardSym1 (a6989586621679211942 :: N) :: (~>) N ((~>) Piece ((~>) [[Maybe Piece]] [[Maybe Piece]]))
+data PlaceBoardSym2 (a6989586621679211942 :: N) (a6989586621679211943 :: N) :: (~>) Piece ((~>) [[Maybe Piece]] [[Maybe Piece]])
+data PlaceBoardSym3 (a6989586621679211942 :: N) (a6989586621679211943 :: N) (a6989586621679211944 :: Piece) :: (~>) [[Maybe Piece]] [[Maybe Piece]]
+type PlaceBoardSym4 (a6989586621679211942 :: N) (a6989586621679211943 :: N) (a6989586621679211944 :: Piece) (a6989586621679211945 :: [[Maybe Piece]]) = PlaceBoard a6989586621679211942 a6989586621679211943 a6989586621679211944 a6989586621679211945
 instance GHC.Classes.Eq TTT.Core.GameOver
 instance GHC.Show.Show TTT.Core.GameOver
 instance GHC.Classes.Eq TTT.Core.Piece
 instance GHC.Show.Show TTT.Core.Piece
+instance Data.Type.Predicate.Decide TTT.Core.SomeVictory
+instance Data.Type.Predicate.Decide (Data.Type.Predicate.TyPred TTT.Core.IsPlayed)
 instance Data.Singletons.Prelude.Eq.PEq TTT.Core.GameOver
 instance Data.Singletons.Prelude.Eq.PEq TTT.Core.Piece
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679212038Sym0
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679212002Sym0
 instance Data.Singletons.Prelude.Show.PShow TTT.Core.GameOver
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679212038Sym1 a6989586621679212035)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679212038Sym2 a6989586621679212036 a6989586621679212035)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679212016Sym0
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679212002Sym1 a6989586621679211999)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679212002Sym2 a6989586621679212000 a6989586621679211999)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679211980Sym0
 instance Data.Singletons.Prelude.Show.PShow TTT.Core.Piece
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679212016Sym1 a6989586621679212013)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679212016Sym2 a6989586621679212014 a6989586621679212013)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679211980Sym1 a6989586621679211977)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679211980Sym2 a6989586621679211978 a6989586621679211977)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.AltPSym0
 instance Data.Singletons.Internal.SingI TTT.Core.AltPSym0
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.LinesSym0
@@ -196,11 +192,11 @@ instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.
 instance Data.Singletons.Internal.SingI TTT.Core.DiagonalSym0
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.PlaceBoardSym0
 instance Data.Singletons.Internal.SingI TTT.Core.PlaceBoardSym0
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym1 a6989586621679211978)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym1 a6989586621679211942)
 instance Data.Singletons.Internal.SingI d => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym1 d)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym2 a6989586621679211979 a6989586621679211978)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym2 a6989586621679211943 a6989586621679211942)
 instance (Data.Singletons.Internal.SingI d1, Data.Singletons.Internal.SingI d2) => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym2 d1 d2)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym3 a6989586621679211980 a6989586621679211979 a6989586621679211978)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym3 a6989586621679211944 a6989586621679211943 a6989586621679211942)
 instance (Data.Singletons.Internal.SingI d1, Data.Singletons.Internal.SingI d2, Data.Singletons.Internal.SingI d3) => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym3 d1 d2 d3)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.GOWinSym0
 instance Data.Singletons.Internal.SingI TTT.Core.GOWinSym0
