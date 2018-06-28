@@ -102,12 +102,12 @@ type instance Apply (AnyVictory b) p = Any [] (TyCon (Victory p)) (Lines b)
 data IsPlayed :: Maybe Piece -> Type where
     IsPlayed :: IsPlayed ('Just p)
 
-instance Decide (TyCon1 IsPlayed) where
+instance Decide (TyPred IsPlayed) where
     decide = \case
       SNothing -> Disproved $ \case {}
       SJust _  -> Proved IsPlayed
 
-type AllFull = All [] (AllPred [] (TyCon1 IsPlayed))
+type AllFull = All [] (AllPred [] (TyPred IsPlayed))
 
 data GameMode :: Board -> Maybe GameOver -> Type where
     GMVictory :: AnyVictory b @@ p
@@ -147,7 +147,7 @@ anyVictory b = case decide @(AnyPred [] SomeVictory) (sLines b) of
 gameMode :: forall b. Sing b -> SomeGameMode b
 gameMode b = case anyVictory b of
     Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
-    Disproved r -> case decide @(AllPred [] (AllPred [] (TyCon1 IsPlayed))) b of
+    Disproved r -> case decide @(AllPred [] (AllPred [] (TyPred IsPlayed))) b of
       Proved (c :: AllFull b) -> SJust SGOCats :&: GMCats r c
       Disproved r' -> SNothing :&: GMInPlay r r'
 

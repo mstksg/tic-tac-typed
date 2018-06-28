@@ -53,7 +53,7 @@ packages:
   extra-dep: true
 - location:
     git: https://github.com/mstksg/elem.git
-    commit: 0fad1575152c8a81bf2d2b278d034d4aa3547155
+    commit: ad512eb0a4ae1e5300c791169d83e16c9f561a8c
   extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
