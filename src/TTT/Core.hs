@@ -107,7 +107,7 @@ instance Decide (TyCon1 IsPlayed) where
       SNothing -> Disproved $ \case {}
       SJust _  -> Proved IsPlayed
 
-type AllFull b = All [] (TyCon1 (All [] (TyCon1 IsPlayed))) b
+type AllFull = All [] (AllPred [] (TyCon1 IsPlayed))
 
 data GameMode :: Board -> Maybe GameOver -> Type where
     GMVictory :: AnyVictory b @@ p
@@ -139,7 +139,7 @@ anyVictory
     :: forall (b :: [[Maybe Piece]]). ()
     => Sing b
     -> Decision (Σ Piece (AnyVictory b))
-anyVictory b = case decide @(TyCon1 (Any [] SomeVictory)) (sLines b) of
+anyVictory b = case decide @(AnyPred [] SomeVictory) (sLines b) of
     Proved (Any s (p :&: v)) -> Proved $ p :&: Any s v
     Disproved r -> Disproved $ \case
       p :&: Any s v -> r $ Any s (p :&: v)
@@ -147,7 +147,7 @@ anyVictory b = case decide @(TyCon1 (Any [] SomeVictory)) (sLines b) of
 gameMode :: forall b. Sing b -> SomeGameMode b
 gameMode b = case anyVictory b of
     Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
-    Disproved r -> case decide @(TyCon1 (All [] (TyCon1 (All [] (TyCon1 IsPlayed))))) b of
+    Disproved r -> case decide @(AllPred [] (AllPred [] (TyCon1 IsPlayed))) b of
       Proved (c :: AllFull b) -> SJust SGOCats :&: GMCats r c
       Disproved r' -> SNothing :&: GMInPlay r r'
 
