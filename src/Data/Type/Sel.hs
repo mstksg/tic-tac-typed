@@ -14,7 +14,7 @@
 {-# LANGUAGE ViewPatterns         #-}
 
 module Data.Type.Sel (
-    Sel(..), selSing, selIx
+    Sel(..)
   , mapIx, sMapIx, MapIx
   , setIx, sSetIx, SetIx
   , overSel
@@ -41,25 +41,13 @@ import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Nat
 
+-- TODO: implement Sel in terms of Index?
+
 -- | A @'Sel' n as a@ is an index into a list @as@ that the @n@th index is
 -- @a@.
 data Sel :: N -> [k] -> k -> Type where
     SelZ :: Sel 'Z (a ': as) a
     SelS :: Sel n as a -> Sel ('S n) (b ': as) a
-
-selIx :: Sel n as a -> Sing as -> Sing a
-selIx = \case
-    SelZ -> \case
-      x `SCons` _  -> x
-    SelS s -> \case
-      _ `SCons` xs -> selIx s xs
-
-selSing
-    :: Sel n as a
-    -> Sing n
-selSing = \case
-    SelZ   -> SZ
-    SelS i -> SS $ selSing i
 
 $(singletons [d|
   mapIx :: N -> (a -> a) -> [a] -> [a]
