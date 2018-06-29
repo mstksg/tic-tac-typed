@@ -119,7 +119,9 @@ sPlaceBoard :: forall (t_aQC8 :: N) (t_aQC9 :: N) (t_aQCa :: Piece) (t_aQCb :: [
 data GameState :: Piece -> Board -> Type
 [GSStart] :: GameState  'PX EmptyBoard
 [GSUpdate] :: InPlay b1 -> Update ij p b1 b2 -> GameState p b1 -> GameState (AltP p) b2
-data AnyVictory b :: Piece ~> Type
+
+-- | Predicate that a board is won by a given player
+data BoardWonBy b :: Predicate Piece
 
 -- | Represents a legal update to a board (in-bounds, and does not
 --   overwrite a played piece)
@@ -137,11 +139,19 @@ startInPlay :: InPlay EmptyBoard
 
 -- | Type-safe "play".
 play :: forall b i j row p. () => InPlay b -> Sel i b row -> Sel j row  'Nothing -> Sing p -> GameState p b -> GameState (AltP p) (PlaceBoard i j p b)
+
+-- | Witness that a game is in a specific mode.
+--   
+--   Generate using <a>Taken</a> for <a>SomeGameMode</a>.
 data GameMode :: Board -> Maybe GameOver -> Type
-[GMVictory] :: AnyVictory b @@ p -> GameMode b ( 'Just ( 'GOWin p))
-[GMCats] :: Refuted (Σ Piece (AnyVictory b)) -> AllFull @@ b -> GameMode b ( 'Just  'GOCats)
-[GMInPlay] :: Refuted (Σ Piece (AnyVictory b)) -> Refuted (AllFull @@ b) -> GameMode b  'Nothing
-data SomeGameMode :: Board ~> Type
+[GMVictory] :: BoardWonBy b @@ p -> GameMode b ( 'Just ( 'GOWin p))
+[GMCats] :: Not HasWinner @@ b -> Cats @@ b -> GameMode b ( 'Just  'GOCats)
+[GMInPlay] :: Not HasWinner @@ b -> Not Cats @@ b -> GameMode b  'Nothing
+
+-- | Predicate that a board has a given game mode.
+--   
+--   Usable with is <a>Taken</a> instance.
+data SomeGameMode :: Predicate Board
 
 -- | Potential results of <a>pick</a>: A verified move, or one of many
 --   failures (with proof of failures)
@@ -171,9 +181,10 @@ instance GHC.Classes.Eq TTT.Core.GameOver
 instance GHC.Show.Show TTT.Core.GameOver
 instance GHC.Classes.Eq TTT.Core.Piece
 instance GHC.Show.Show TTT.Core.Piece
-instance Data.Type.Predicate.Decide TTT.Core.SomeVictory
 instance Data.Type.Predicate.Decide TTT.Core.SomeGameMode
 instance Data.Type.Predicate.Taken TTT.Core.SomeGameMode
+instance Data.Type.Predicate.Decide TTT.Core.SomeVictory
+instance Data.Type.Predicate.Decide TTT.Core.HasWinner
 instance Data.Singletons.Prelude.Eq.PEq TTT.Core.GameOver
 instance Data.Singletons.Prelude.Eq.PEq TTT.Core.Piece
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679212029Sym0
