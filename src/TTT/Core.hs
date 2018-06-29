@@ -24,11 +24,13 @@ module TTT.Core (
   , lines, Lines, sLines
   , emptyBoard, EmptyBoard, sEmptyBoard
   , placeBoard, PlaceBoard, sPlaceBoard
+  -- ** Predicates on data types
+  , BoardWonBy, HasWinner, Cats
+  , GameMode(..), SomeGameMode
   -- * Represent game state and updates
-  , GameState(..), BoardWonBy
+  , GameState(..)
   , Update(..), Coord(..), InPlay, startInPlay
   , play
-  , GameMode(..), SomeGameMode
   -- ** Verify
   , Pick(..), pick
   -- * Defunctionalization Symbols
