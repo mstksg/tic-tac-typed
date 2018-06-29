@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeInType             #-}
+{-# LANGUAGE TypeOperators          #-}
 {-# OPTIONS_GHC -Wno-orphans        #-}
 
 module TTT.Controller.Minimax (
@@ -28,6 +29,7 @@ import           Data.Ord
 import           Data.Semigroup
 import           Data.Singletons
 import           Data.Singletons.Prelude hiding  (Min, Max)
+import           Data.Type.Predicate
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH hiding       (Min, Max)
 import           Data.Type.Nat
@@ -84,7 +86,7 @@ minimax b r p g n = do
   where
     go :: Move b -> m (Option (Max (Arg (RankRes p) (Move b))))
     go m@(STuple2 i j :&: Coord i' j') = do
-      res <- case gameMode b' of
+      res <- case taken @SomeGameMode b' of
         SNothing :&: gm -> case n of
           Z    -> pure @m . pure @Option $ Nothing
           S n' -> fmap (getRR . getArg . getMax) <$>
@@ -157,9 +159,10 @@ buildMMTree b gm@(GMInPlay _ _) p g = \case
     go  :: Sing n'
         -> Move b
         -> DM.DSum Sing (SomeBranch n' b p)
-    go n' (STuple2 i j :&: c@(Coord i' j')) = (STuple2 i j DM.:=>) . flip SB c $ case gameMode b' of
-        SNothing :&: m -> buildMMTree b' m (sAltP p) g' n'
-        SJust s  :&: m -> MMGameOver m s
+    go n' (STuple2 i j :&: c@(Coord i' j')) = (STuple2 i j DM.:=>) . flip SB c $
+        case taken @SomeGameMode b' of
+          SNothing :&: m -> buildMMTree b' m (sAltP p) g' n'
+          SJust s  :&: m -> MMGameOver m s
       where
         b' = sPlaceBoard i j p b
         g' = play gm i' j' p g
@@ -168,7 +171,7 @@ pickMMTree
     :: forall n b p m. (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
     => Sing p
     -> MMTree n b p
-    -> m (Option (ArgMax (RankRes p) (Move b)), SomeGameMode b)
+    -> m (Option (ArgMax (RankRes p) (Move b)), SomeGameMode @@ b)
 pickMMTree p = \case
     MMCutoff m   -> pure (Option Nothing, SNothing :&: m)
     MMGameOver m s -> pure (Option Nothing, SJust s :&: m)

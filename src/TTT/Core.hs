@@ -28,7 +28,7 @@ module TTT.Core (
   , GameState(..), AnyVictory
   , Update(..), Coord(..), InPlay, startInPlay
   , play
-  , GameMode(..), SomeGameMode, gameMode
+  , GameMode(..), SomeGameMode
   -- ** Verify
   , Pick(..), pick
   -- * Defunctionalization Symbols
@@ -99,15 +99,9 @@ data Victory :: Piece -> [Maybe Piece] -> Type where
 data AnyVictory b :: Piece ~> Type
 type instance Apply (AnyVictory b) p = Any [] (TyCon (Victory p)) @@ (Lines b)
 
-data IsPlayed :: Maybe Piece -> Type where
-    IsPlayed :: IsPlayed ('Just p)
+type IsPlayed = Any Maybe Evident
 
-instance Decide (TyPred IsPlayed) where
-    decide = \case
-      SNothing -> Disproved $ \case {}
-      SJust _  -> Proved IsPlayed
-
-type AllFull = All [] (All [] (TyPred IsPlayed))
+type AllFull = All [] (All [] IsPlayed)
 
 data GameMode :: Board -> Maybe GameOver -> Type where
     GMVictory :: AnyVictory b @@ p
@@ -119,7 +113,8 @@ data GameMode :: Board -> Maybe GameOver -> Type where
               -> Refuted (AllFull @@ b)
               -> GameMode b 'Nothing
 
-type SomeGameMode b = Σ (Maybe GameOver) (TyCon (GameMode b))
+data SomeGameMode :: Board ~> Type
+type instance Apply SomeGameMode b = Σ (Maybe GameOver) (TyCon (GameMode b))
 
 data SomeVictory :: [Maybe Piece] ~> Type
 type instance Apply SomeVictory as = Σ Piece (FlipSym2 (TyCon Victory) as)
@@ -144,12 +139,13 @@ anyVictory b = case decide @(Any [] SomeVictory) (sLines b) of
     Disproved r -> Disproved $ \case
       p :&: WitAny s v -> r $ WitAny s (p :&: v)
 
-gameMode :: forall b. Sing b -> SomeGameMode b
-gameMode b = case anyVictory b of
-    Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
-    Disproved r -> case decide @(All [] (All [] (TyPred IsPlayed))) b of
-      Proved (c :: AllFull @@ b) -> SJust SGOCats :&: GMCats r c
-      Disproved r' -> SNothing :&: GMInPlay r r'
+instance Decide SomeGameMode
+instance Taken SomeGameMode where
+    taken b = case anyVictory b of
+      Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
+      Disproved r -> case decide @AllFull b of
+        Proved (c :: AllFull @@ b) -> SJust SGOCats :&: GMCats r c
+        Disproved r' -> SNothing :&: GMInPlay r r'
 
 type InPlay b = GameMode b 'Nothing
 
@@ -208,7 +204,8 @@ startInPlay = GMInPlay noVictor noCats
     noVictor (_ :&: WitAny s (Victory _)) = case s of                  -- data kinds trips up ghc
       IS (IS (IS (IS (IS (IS (IS (IS t))))))) -> case t of {}
     noCats :: Refuted (AllFull @@ EmptyBoard)
-    noCats a = case runWitAll (runWitAll a IZ) IZ of {}
+    noCats a = case runWitAll (runWitAll a IZ) IZ of
+      WitAny i _ -> case i of {}
 
 -- | Type-safe "play".
 play
