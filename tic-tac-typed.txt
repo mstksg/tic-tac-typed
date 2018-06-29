@@ -112,6 +112,32 @@ sEmptyBoard :: Sing (EmptyBoardSym0 :: [[Maybe Piece]])
 placeBoard :: N -> N -> Piece -> Board -> Board
 sPlaceBoard :: forall (t_aQC8 :: N) (t_aQC9 :: N) (t_aQCa :: Piece) (t_aQCb :: [[Maybe Piece]]). Sing t_aQC8 -> Sing t_aQC9 -> Sing t_aQCa -> Sing t_aQCb -> Sing (Apply (Apply (Apply (Apply PlaceBoardSym0 t_aQC8) t_aQC9) t_aQCa) t_aQCb :: [[Maybe Piece]])
 
+-- | Predicate that a board is won by a given player
+data BoardWonBy b :: Predicate Piece
+
+-- | Predicate that a board has some winnner
+data HasWinner :: Predicate Board
+
+-- | Predicate that all spots have been played (cats game).
+--   
+--   <pre>
+--   <a>IsPlayed</a> :: <a>Predicate</a> <a>Board</a>
+--   </pre>
+type Cats = All [] (All [] IsPlayed)
+
+-- | Witness that a game is in a specific mode.
+--   
+--   Generate using <a>Taken</a> for <a>SomeGameMode</a>.
+data GameMode :: Board -> Maybe GameOver -> Type
+[GMVictory] :: BoardWonBy b @@ p -> GameMode b ( 'Just ( 'GOWin p))
+[GMCats] :: Not HasWinner @@ b -> Cats @@ b -> GameMode b ( 'Just  'GOCats)
+[GMInPlay] :: Not HasWinner @@ b -> Not Cats @@ b -> GameMode b  'Nothing
+
+-- | Predicate that a board has a given game mode.
+--   
+--   Usable with is <a>Taken</a> instance.
+data SomeGameMode :: Predicate Board
+
 -- | Current board and currently expected player.
 --   
 --   Can only be constructed by appending valid moves onto a known valid
@@ -119,9 +145,6 @@ sPlaceBoard :: forall (t_aQC8 :: N) (t_aQC9 :: N) (t_aQCa :: Piece) (t_aQCb :: [
 data GameState :: Piece -> Board -> Type
 [GSStart] :: GameState  'PX EmptyBoard
 [GSUpdate] :: InPlay b1 -> Update ij p b1 b2 -> GameState p b1 -> GameState (AltP p) b2
-
--- | Predicate that a board is won by a given player
-data BoardWonBy b :: Predicate Piece
 
 -- | Represents a legal update to a board (in-bounds, and does not
 --   overwrite a played piece)
@@ -139,19 +162,6 @@ startInPlay :: InPlay EmptyBoard
 
 -- | Type-safe "play".
 play :: forall b i j row p. () => InPlay b -> Sel i b row -> Sel j row  'Nothing -> Sing p -> GameState p b -> GameState (AltP p) (PlaceBoard i j p b)
-
--- | Witness that a game is in a specific mode.
---   
---   Generate using <a>Taken</a> for <a>SomeGameMode</a>.
-data GameMode :: Board -> Maybe GameOver -> Type
-[GMVictory] :: BoardWonBy b @@ p -> GameMode b ( 'Just ( 'GOWin p))
-[GMCats] :: Not HasWinner @@ b -> Cats @@ b -> GameMode b ( 'Just  'GOCats)
-[GMInPlay] :: Not HasWinner @@ b -> Not Cats @@ b -> GameMode b  'Nothing
-
--- | Predicate that a board has a given game mode.
---   
---   Usable with is <a>Taken</a> instance.
-data SomeGameMode :: Predicate Board
 
 -- | Potential results of <a>pick</a>: A verified move, or one of many
 --   failures (with proof of failures)
