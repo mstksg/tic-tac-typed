@@ -25,7 +25,7 @@ module TTT.Core (
   , emptyBoard, EmptyBoard, sEmptyBoard
   , placeBoard, PlaceBoard, sPlaceBoard
   -- * Represent game state and updates
-  , GameState(..), AnyVictory
+  , GameState(..), BoardWonBy
   , Update(..), Coord(..), InPlay, startInPlay
   , play
   , GameMode(..), SomeGameMode
@@ -43,7 +43,7 @@ module TTT.Core (
 import           Data.Kind
 import           Data.List hiding                    (lines)
 import           Data.Singletons.Decide
-import           Data.Singletons.Prelude hiding      (All, Any)
+import           Data.Singletons.Prelude hiding      (All, Any, Not)
 import           Data.Singletons.Prelude.List hiding (All, Any)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
@@ -52,6 +52,10 @@ import           Data.Type.Predicate
 import           Data.Type.Sel
 import           Data.Type.Universe
 import           Prelude hiding                      (lines)
+
+-- ********************************
+--  Types and type-level functions
+-- ********************************
 
 $(singletons [d|
   data Piece = PX | PO
@@ -92,32 +96,40 @@ $(singletons [d|
   placeBoard i j p = mapIx i (setIx j (Just p))
   |])
 
+-- ********************************
+--  Predicates
+-- ********************************
+
+-- | Witness that a piece has won a row
 data Victory :: Piece -> [Maybe Piece] -> Type where
     Victory :: All [] (TyPred ((:~:) ('Just p))) @@ as
             -> Victory p ('Just p ': as)
 
-data AnyVictory b :: Piece ~> Type
-type instance Apply (AnyVictory b) p = Any [] (TyCon (Victory p)) @@ (Lines b)
+-- | Predicate that a board is won by a given player
+data BoardWonBy b :: Predicate Piece
+type instance Apply (BoardWonBy b) p = Any [] (TyCon (Victory p)) @@ (Lines b)
 
+-- | Predicate that a board has some winnner
+data HasWinner :: Predicate Board
+type instance Apply HasWinner b = Σ Piece (BoardWonBy b)
+
+-- | Predicate that a space has been played
+--
+-- @
+-- 'IsPlayed' :: 'Predicate' ('Maybe' 'Piece')
+-- @
 type IsPlayed = Any Maybe Evident
 
-type AllFull = All [] (All [] IsPlayed)
-
-data GameMode :: Board -> Maybe GameOver -> Type where
-    GMVictory :: AnyVictory b @@ p
-              -> GameMode b ('Just ('GOWin p))
-    GMCats    :: Refuted (Σ Piece (AnyVictory b))
-              -> AllFull @@ b
-              -> GameMode b ('Just 'GOCats)
-    GMInPlay  :: Refuted (Σ Piece (AnyVictory b))
-              -> Refuted (AllFull @@ b)
-              -> GameMode b 'Nothing
-
-data SomeGameMode :: Board ~> Type
-type instance Apply SomeGameMode b = Σ (Maybe GameOver) (TyCon (GameMode b))
-
-data SomeVictory :: [Maybe Piece] ~> Type
+-- | Predicate that a line has been won by some player
+data SomeVictory :: Predicate [Maybe Piece]
 type instance Apply SomeVictory as = Σ Piece (FlipSym2 (TyCon Victory) as)
+
+-- | Predicate that all spots have been played (cats game).
+--
+-- @
+-- 'IsPlayed' :: 'Predicate' 'Board'
+-- @
+type Cats = All [] (All [] IsPlayed)
 
 instance Decide SomeVictory where
     decide = \case
@@ -130,21 +142,41 @@ instance Decide SomeVictory where
         Disproved r -> Disproved $ \case
           _ :&: Victory a -> r a
 
-anyVictory
-    :: forall (b :: [[Maybe Piece]]). ()
-    => Sing b
-    -> Decision (Σ Piece (AnyVictory b))
-anyVictory b = case decide @(Any [] SomeVictory) (sLines b) of
-    Proved (WitAny s (p :&: v)) -> Proved $ p :&: WitAny s v
-    Disproved r -> Disproved $ \case
-      p :&: WitAny s v -> r $ WitAny s (p :&: v)
+instance Decide HasWinner where
+    decide b = case decide @(Any [] SomeVictory) (sLines b) of
+      Proved (WitAny s (p :&: v)) -> Proved $ p :&: WitAny s v
+      Disproved r -> Disproved $ \case
+        p :&: WitAny s v -> r $ WitAny s (p :&: v)
+
+-- ********************************
+--  Witnesses
+-- ********************************
+
+-- | Witness that a game is in a specific mode.
+--
+-- Generate using 'Taken' for 'SomeGameMode'.
+data GameMode :: Board -> Maybe GameOver -> Type where
+    GMVictory :: BoardWonBy b @@ p
+              -> GameMode b ('Just ('GOWin p))
+    GMCats    :: Not HasWinner @@ b
+              -> Cats @@ b
+              -> GameMode b ('Just 'GOCats)
+    GMInPlay  :: Not HasWinner @@ b
+              -> Not Cats @@ b
+              -> GameMode b 'Nothing
+
+-- | Predicate that a board has a given game mode.
+--
+-- Usable with is 'Taken' instance.
+data SomeGameMode :: Predicate Board
+type instance Apply SomeGameMode b = Σ (Maybe GameOver) (TyCon (GameMode b))
 
 instance Decide SomeGameMode
 instance Taken SomeGameMode where
-    taken b = case anyVictory b of
+    taken b = case decide @HasWinner b of
       Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
-      Disproved r -> case decide @AllFull b of
-        Proved (c :: AllFull @@ b) -> SJust SGOCats :&: GMCats r c
+      Disproved r -> case decide @Cats b of
+        Proved (c :: Cats @@ b) -> SJust SGOCats :&: GMCats r c
         Disproved r' -> SNothing :&: GMInPlay r r'
 
 type InPlay b = GameMode b 'Nothing
@@ -200,10 +232,10 @@ data GameState :: Piece -> Board -> Type where
 startInPlay :: InPlay EmptyBoard
 startInPlay = GMInPlay noVictor noCats
   where
-    noVictor :: Refuted (Σ Piece (AnyVictory EmptyBoard))
+    noVictor :: Refuted (Σ Piece (BoardWonBy EmptyBoard))
     noVictor (_ :&: WitAny s (Victory _)) = case s of                  -- data kinds trips up ghc
       IS (IS (IS (IS (IS (IS (IS (IS t))))))) -> case t of {}
-    noCats :: Refuted (AllFull @@ EmptyBoard)
+    noCats :: Refuted (Cats @@ EmptyBoard)
     noCats a = case runWitAll (runWitAll a IZ) IZ of
       WitAny i _ -> case i of {}
 
