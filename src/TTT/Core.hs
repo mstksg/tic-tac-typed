@@ -61,7 +61,7 @@ $(singletons [d|
                 | GOWin Piece
     deriving (Show, Eq)
 
-  -- | Alternate the piece; used to pick "next player"
+  -- Alternate the piece; used to pick "next player"
   altP :: Piece -> Piece
   altP PX = PO
   altP PO = PX
@@ -70,34 +70,34 @@ $(singletons [d|
   diagonal []          = []
   diagonal ((x:_):xss) = x : diagonal (map (drop 1) xss)
 
-  -- | Get all winnable three-in-a-row lines from a board
+  -- Get all winnable three-in-a-row lines from a board
   lines :: [[a]] -> [[a]]
   lines xs = concat [ xs
                     , transpose xs
                     , [diagonal xs, diagonal (reverse xs)]
                     ]
 
-  -- | Representation of a board
+  -- Representation of a board
   type Board = [[Maybe Piece]]
 
-  -- | The empty (starting) board
+  -- The empty (starting) board
   emptyBoard :: Board
   emptyBoard = [ [Nothing, Nothing, Nothing]
                , [Nothing, Nothing, Nothing]
                , [Nothing, Nothing, Nothing]
                ]
 
-  -- | Place a piece on a board at given coordinates
+  -- Place a piece on a board at given coordinates
   placeBoard :: N -> N -> Piece -> Board -> Board
   placeBoard i j p = mapIx i (setIx j (Just p))
   |])
 
 data Victory :: Piece -> [Maybe Piece] -> Type where
-    Victory :: All [] (TyCon ((:~:) ('Just p))) as
+    Victory :: All [] (TyPred ((:~:) ('Just p))) @@ as
             -> Victory p ('Just p ': as)
 
 data AnyVictory b :: Piece ~> Type
-type instance Apply (AnyVictory b) p = Any [] (TyCon (Victory p)) (Lines b)
+type instance Apply (AnyVictory b) p = Any [] (TyCon (Victory p)) @@ (Lines b)
 
 data IsPlayed :: Maybe Piece -> Type where
     IsPlayed :: IsPlayed ('Just p)
@@ -107,16 +107,16 @@ instance Decide (TyPred IsPlayed) where
       SNothing -> Disproved $ \case {}
       SJust _  -> Proved IsPlayed
 
-type AllFull = All [] (AllPred [] (TyPred IsPlayed))
+type AllFull = All [] (All [] (TyPred IsPlayed))
 
 data GameMode :: Board -> Maybe GameOver -> Type where
     GMVictory :: AnyVictory b @@ p
               -> GameMode b ('Just ('GOWin p))
     GMCats    :: Refuted (Σ Piece (AnyVictory b))
-              -> AllFull b
+              -> AllFull @@ b
               -> GameMode b ('Just 'GOCats)
     GMInPlay  :: Refuted (Σ Piece (AnyVictory b))
-              -> Refuted (AllFull b)
+              -> Refuted (AllFull @@ b)
               -> GameMode b 'Nothing
 
 type SomeGameMode b = Σ (Maybe GameOver) (TyCon (GameMode b))
@@ -139,16 +139,16 @@ anyVictory
     :: forall (b :: [[Maybe Piece]]). ()
     => Sing b
     -> Decision (Σ Piece (AnyVictory b))
-anyVictory b = case decide @(AnyPred [] SomeVictory) (sLines b) of
-    Proved (Any s (p :&: v)) -> Proved $ p :&: Any s v
+anyVictory b = case decide @(Any [] SomeVictory) (sLines b) of
+    Proved (WitAny s (p :&: v)) -> Proved $ p :&: WitAny s v
     Disproved r -> Disproved $ \case
-      p :&: Any s v -> r $ Any s (p :&: v)
+      p :&: WitAny s v -> r $ WitAny s (p :&: v)
 
 gameMode :: forall b. Sing b -> SomeGameMode b
 gameMode b = case anyVictory b of
     Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
-    Disproved r -> case decide @(AllPred [] (AllPred [] (TyPred IsPlayed))) b of
-      Proved (c :: AllFull b) -> SJust SGOCats :&: GMCats r c
+    Disproved r -> case decide @(All [] (All [] (TyPred IsPlayed))) b of
+      Proved (c :: AllFull @@ b) -> SJust SGOCats :&: GMCats r c
       Disproved r' -> SNothing :&: GMInPlay r r'
 
 type InPlay b = GameMode b 'Nothing
@@ -205,10 +205,10 @@ startInPlay :: InPlay EmptyBoard
 startInPlay = GMInPlay noVictor noCats
   where
     noVictor :: Refuted (Σ Piece (AnyVictory EmptyBoard))
-    noVictor (_ :&: Any s (Victory _)) = case s of                  -- data kinds trips up ghc
+    noVictor (_ :&: WitAny s (Victory _)) = case s of                  -- data kinds trips up ghc
       IS (IS (IS (IS (IS (IS (IS (IS t))))))) -> case t of {}
-    noCats :: Refuted (AllFull EmptyBoard)
-    noCats a = case runAll (runAll a IZ) IZ of {}
+    noCats :: Refuted (AllFull @@ EmptyBoard)
+    noCats a = case runWitAll (runWitAll a IZ) IZ of {}
 
 -- | Type-safe "play".
 play

@@ -52,8 +52,8 @@ packages:
     commit: 80d08597c23d4defb81d6e48d3f407bc0d91f34d
   extra-dep: true
 - location:
-    git: https://github.com/mstksg/elem.git
-    commit: ad512eb0a4ae1e5300c791169d83e16c9f561a8c
+    git: https://github.com/mstksg/decidable-predicates.git
+    commit: 357299acdea9edeb832e1aac9c122817cfe7a93d
   extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver

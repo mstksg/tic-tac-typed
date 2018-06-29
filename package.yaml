@@ -40,7 +40,7 @@ library:
   - foldl
   - haskeline
   - vector
-  - elem
+  - decidable-predicates
 
 executables:
   tic-tac-typed-console:
