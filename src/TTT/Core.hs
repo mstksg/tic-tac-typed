@@ -102,36 +102,30 @@ $(singletons [d|
 --  Predicates
 -- ********************************
 
+data Found v :: (k -> Predicate v) -> Predicate k
+type instance Apply (Found v p) a = Σ v (p a)
+
 -- | Witness that a piece has won a row
 data Victory :: Piece -> [Maybe Piece] -> Type where
-    Victory :: All [] (TyPred ((:~:) ('Just p))) @@ as
+    Victory :: All [] (EqualTo ('Just p)) @@ as
             -> Victory p ('Just p ': as)
 
 -- | Predicate that a board is won by a given player
-data BoardWonBy b :: Predicate Piece
-type instance Apply (BoardWonBy b) p = Any [] (TyCon (Victory p)) @@ (Lines b)
+data BoardWonBy :: Board -> Predicate Piece
+type instance Apply (BoardWonBy b) p = Any [] (TyCon (Victory p)) @@ Lines b
 
 -- | Predicate that a board has some winnner
-data HasWinner :: Predicate Board
-type instance Apply HasWinner b = Σ Piece (BoardWonBy b)
-
--- | Predicate that a space has been played
---
--- @
--- 'IsPlayed' :: 'Predicate' ('Maybe' 'Piece')
--- @
-type IsPlayed = Any Maybe Evident
+type HasWinner = Found Piece BoardWonBy
 
 -- | Predicate that a line has been won by some player
-data SomeVictory :: Predicate [Maybe Piece]
-type instance Apply SomeVictory as = Σ Piece (FlipSym2 (TyCon Victory) as)
+type SomeVictory = Found Piece (FlipSym2 (TyCon2 Victory))
 
 -- | Predicate that all spots have been played (cats game).
 --
 -- @
--- 'IsPlayed' :: 'Predicate' 'Board'
+-- 'Cats' :: 'Predicate' 'Board'
 -- @
-type Cats = All [] (All [] IsPlayed)
+type Cats = All [] (All [] (Any Maybe Evident))
 
 instance Decide SomeVictory where
     decide = \case
@@ -139,12 +133,12 @@ instance Decide SomeVictory where
         _ :&: v -> case v of {}
       SNothing `SCons` _ -> Disproved $ \case
         _ :&: v -> case v of {}
-      mx@(SJust x) `SCons` xs -> case decideAll (mx %~) xs of
+      SJust (x@Sing :: Sing p) `SCons` xs -> case decide @(All [] (EqualTo ('Just p))) xs of
         Proved p -> Proved $ x :&: Victory p
         Disproved r -> Disproved $ \case
           _ :&: Victory a -> r a
 
-instance Decide HasWinner where
+instance Decide (Found Piece BoardWonBy) where
     decide b = case decide @(Any [] SomeVictory) (sLines b) of
       Proved (WitAny s (p :&: v)) -> Proved $ p :&: WitAny s v
       Disproved r -> Disproved $ \case
@@ -167,11 +161,13 @@ data GameMode :: Board -> Maybe GameOver -> Type where
               -> Not Cats @@ b
               -> GameMode b 'Nothing
 
+data GameModeFor :: Board -> Predicate (Maybe GameOver)
+type instance Apply (GameModeFor b) o = GameMode b o
+
 -- | Predicate that a board has a given game mode.
 --
 -- Usable with is 'Taken' instance.
-data SomeGameMode :: Predicate Board
-type instance Apply SomeGameMode b = Σ (Maybe GameOver) (TyCon (GameMode b))
+type SomeGameMode = Found (Maybe GameOver) GameModeFor
 
 instance Decide SomeGameMode
 instance Taken SomeGameMode where
