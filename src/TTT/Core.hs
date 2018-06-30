@@ -129,9 +129,7 @@ instance Search LineWon where
 -- @
 -- 'Winner' :: 'ParamPred' 'Board' 'Piece'
 -- @
---
--- OKAY MUST BE ABLE TO SLINES THIS
-type Winner = AnyMatch [] LineWon
+type Winner = PPMap LinesSym0 (AnyMatch [] LineWon)
 
 -- | Predicate that all spots have been played (cats game).
 --
@@ -222,10 +220,8 @@ startInPlay :: InPlay EmptyBoard
 startInPlay = GMInPlay noVictor noCats
   where
     noVictor :: Refuted (Σ Piece (Winner EmptyBoard))
-    -- noVictor (_ :&: WitAny s (Victory _)) = case s of                  -- data kinds trips up ghc
-    --   IS (IS (IS (IS (IS (IS (IS (IS t))))))) -> case t of {}
     noVictor (_ :&: WitAny s (Victory _)) = case s of                  -- data kinds trips up ghc
-      IS (IS (IS t)) -> case t of {}
+      IS (IS (IS (IS (IS (IS (IS (IS t))))))) -> case t of {}
     noCats :: Refuted (Cats @@ EmptyBoard)
     noCats a = case runWitAll (runWitAll a IZ) IZ of
       WitAny i _ -> case i of {}

@@ -53,7 +53,7 @@ packages:
   extra-dep: true
 - location:
     git: https://github.com/mstksg/decidable-predicates.git
-    commit: 4e4991d72803bc99e0cd619cffddbc1ef073d91b
+    commit: f35c83ccfa7defc370a6864a9851bde48697f377
   extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver

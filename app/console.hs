@@ -92,6 +92,6 @@ runController p c (b :&: (g, r)) = do
       Just (STuple2 i j :&: Coord i' j') -> do
         let b' = sPlaceBoard i j p b
             g' = play r i' j' p g
-        case search_ @_ @_ @GameModeFor b' of
+        case search_ @GameModeFor b' of
           SNothing :&: m -> pure   $ b' :&: (g', m)
           SJust s  :&: _ -> throwE (FromSing b', EGameOver (FromSing s))
