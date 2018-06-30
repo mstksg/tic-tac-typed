@@ -29,11 +29,10 @@ import           Data.Ord
 import           Data.Semigroup
 import           Data.Singletons
 import           Data.Singletons.Prelude hiding  (Min, Max)
-import           Data.Type.Predicate
-import           Data.Type.Search
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH hiding       (Min, Max)
 import           Data.Type.Nat
+import           Data.Type.Predicate.Param
 import           TTT.Controller
 import           TTT.Core
 import qualified Control.Foldl                   as F

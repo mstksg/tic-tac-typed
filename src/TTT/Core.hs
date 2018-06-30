@@ -52,7 +52,7 @@ import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Nat
 import           Data.Type.Predicate
-import           Data.Type.Search
+import           Data.Type.Predicate.Param
 import           Data.Type.Sel
 import           Data.Type.Universe
 import           Prelude hiding                      (lines)
