@@ -116,18 +116,14 @@ sPlaceBoard :: forall (t_aQEQ :: N) (t_aQER :: N) (t_aQES :: Piece) (t_aQET :: [
 data Found (a :: ParamPred k v) (b :: TyFun k Type) :: forall v k. () => ParamPred k v -> TyFun k Type -> Type
 
 -- | Predicate that a board is won by a given player
---   
---   <pre>
---   <a>Winner</a> :: <a>ParamPred</a> <a>Board</a> <a>Piece</a>
---   </pre>
-type Winner = PPMap LinesSym0 (AnyMatch [] LineWon)
+type Winner = (PPMap LinesSym0 (AnyMatch [] LineWon) :: ParamPred Board Piece)
 
 -- | Predicate that all spots have been played (cats game).
 --   
 --   <pre>
 --   <a>Cats</a> :: <a>Predicate</a> <a>Board</a>
 --   </pre>
-type Cats = All [] (All [] (Any Maybe Evident))
+type Cats = (All [] (All [] (Any Maybe Evident)) :: Predicate Board)
 
 -- | Witness that a game is in a specific mode.
 --   
