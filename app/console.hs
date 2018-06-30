@@ -18,6 +18,7 @@ import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Nat
 import           Data.Type.Predicate
+import           Data.Type.Search
 import           TTT.Controller
 import           TTT.Controller.Console
 import           TTT.Controller.Minimax
@@ -91,6 +92,6 @@ runController p c (b :&: (g, r)) = do
       Just (STuple2 i j :&: Coord i' j') -> do
         let b' = sPlaceBoard i j p b
             g' = play r i' j' p g
-        case taken @SomeGameMode b' of
+        case search_ @_ @_ @GameModeFor b' of
           SNothing :&: m -> pure   $ b' :&: (g', m)
           SJust s  :&: _ -> throwE (FromSing b', EGameOver (FromSing s))
