@@ -125,18 +125,14 @@ instance Search LineWon where
           _ :&: Victory a -> r a
 
 -- | Predicate that a board is won by a given player
---
--- @
--- 'Winner' :: 'ParamPred' 'Board' 'Piece'
--- @
-type Winner = PPMap LinesSym0 (AnyMatch [] LineWon)
+type Winner = (PPMap LinesSym0 (AnyMatch [] LineWon) :: ParamPred Board Piece)
 
 -- | Predicate that all spots have been played (cats game).
 --
 -- @
 -- 'Cats' :: 'Predicate' 'Board'
 -- @
-type Cats = All [] (All [] (Any Maybe Evident))
+type Cats = (All [] (All [] (Any Maybe Evident)) :: Predicate Board)
 
 -- ********************************
 --  Witnesses
