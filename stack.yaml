@@ -51,6 +51,10 @@ packages:
     git: https://github.com/goldfirere/th-desugar.git
     commit: 80d08597c23d4defb81d6e48d3f407bc0d91f34d
   extra-dep: true
+- location:
+    git: https://github.com/mstksg/decidable-predicates.git
+    commit: 0219c1ceb0eb1f63f329e3a83bcf5fda3e5ed423
+  extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.

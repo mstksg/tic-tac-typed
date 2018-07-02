@@ -3,6 +3,7 @@
 {-# LANGUAGE KindSignatures   #-}
 {-# LANGUAGE RankNTypes       #-}
 {-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies     #-}
 {-# LANGUAGE TypeInType       #-}
 
@@ -12,10 +13,11 @@ import           Control.Monad.Primitive
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Except
 import           Data.Singletons
-import           Data.Singletons.TH
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
+import           Data.Singletons.TH
 import           Data.Type.Nat
+import           Data.Type.Predicate.Param
 import           TTT.Controller
 import           TTT.Controller.Console
 import           TTT.Controller.Minimax
@@ -45,7 +47,7 @@ main = MWC.withSystemRandom $ \g -> do
     Left (b,e) <- flip runReaderT g
                 . runExceptT
                 . chainForever (runGame playerX playerO) $
-       STuple2 sing sing :&: (GSStart, InPlay)
+       STuple2 sing sing :&: (GSStart, startInPlay)
     putStrLn "Game over!"
     putStrLn $ displayBoard b
     putStrLn $ case e of
@@ -89,6 +91,6 @@ runController p c (b :&: (g, r)) = do
       Just (STuple2 i j :&: Coord i' j') -> do
         let b' = sPlaceBoard i j p b
             g' = play r i' j' p g
-        case sBoardOver b' of
-          SNothing -> pure   $ b' :&: (g', InPlay)
-          SJust s  -> throwE (FromSing b', EGameOver (FromSing s))
+        case search_ @GameModeFor b' of
+          SNothing :&: m -> pure   $ b' :&: (g', m)
+          SJust s  :&: _ -> throwE (FromSing b', EGameOver (FromSing s))

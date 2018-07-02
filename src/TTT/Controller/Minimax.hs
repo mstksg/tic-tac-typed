@@ -10,6 +10,7 @@
 {-# LANGUAGE TypeFamilies           #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE TypeInType             #-}
+{-# LANGUAGE TypeOperators          #-}
 {-# OPTIONS_GHC -Wno-orphans        #-}
 
 module TTT.Controller.Minimax (
@@ -31,6 +32,7 @@ import           Data.Singletons.Prelude hiding  (Min, Max)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH hiding       (Min, Max)
 import           Data.Type.Nat
+import           Data.Type.Predicate.Param
 import           TTT.Controller
 import           TTT.Core
 import qualified Control.Foldl                   as F
@@ -84,12 +86,12 @@ minimax b r p g n = do
   where
     go :: Move b -> m (Option (Max (Arg (RankRes p) (Move b))))
     go m@(STuple2 i j :&: Coord i' j') = do
-      res <- case sBoardOver b' of
-        SNothing -> case n of
+      res <- case search_ @GameModeFor b' of
+        SNothing :&: gm -> case n of
           Z    -> pure @m . pure @Option $ Nothing
           S n' -> fmap (getRR . getArg . getMax) <$>
-            minimax b' InPlay (sAltP p) g' n'
-        SJust s -> pure @m . pure @Option $ Just (FromSing s)
+            minimax b' gm (sAltP p) g' n'
+        SJust s :&: _ -> pure @m . pure @Option $ Just (FromSing s)
       pure $ Max . flip Arg m . RR <$> res
       where
         b' = sPlaceBoard i j p b
@@ -133,13 +135,13 @@ data SomeBranch :: N -> Board -> Piece -> (N, N) -> Type where
        -> SomeBranch n b p '(i, j)
 
 data MMTree :: N -> Board -> Piece -> Type where
-    MMCutoff   :: (BoardOver b ~ 'Nothing)
-               => MMTree 'Z b p
-    MMGameOver :: (BoardOver b ~ 'Just s)
-               => Sing s
+    MMCutoff   :: InPlay b
+               -> MMTree 'Z b p
+    MMGameOver :: GameMode b ('Just s)
+               -> Sing s
                -> MMTree n b p
-    MMBranch   :: (BoardOver b ~ 'Nothing)
-               => DM.DMap Sing (SomeBranch n b p)
+    MMBranch   :: InPlay b
+               -> DM.DMap Sing (SomeBranch n b p)
                -> MMTree ('S n) b p
 
 buildMMTree
@@ -150,38 +152,39 @@ buildMMTree
     -> GameState p b
     -> Sing n
     -> MMTree n b p
-buildMMTree b InPlay p g = \case
-    SZ   -> MMCutoff
-    SS n -> MMBranch . DM.fromAscList . toList $ go n <$> validMoves b
+buildMMTree b gm@(GMInPlay _ _) p g = \case
+    SZ   -> MMCutoff gm
+    SS n -> MMBranch gm . DM.fromAscList . toList $ go n <$> validMoves b
   where
     go  :: Sing n'
         -> Move b
         -> DM.DSum Sing (SomeBranch n' b p)
-    go n' (STuple2 i j :&: c@(Coord i' j')) = (STuple2 i j DM.:=>) . flip SB c $ case sBoardOver b' of
-        SNothing -> buildMMTree b' InPlay (sAltP p) g' n'
-        SJust s  -> MMGameOver s
+    go n' (STuple2 i j :&: c@(Coord i' j')) = (STuple2 i j DM.:=>) . flip SB c $
+        case search_ @GameModeFor b' of
+          SNothing :&: m -> buildMMTree b' m (sAltP p) g' n'
+          SJust s  :&: m -> MMGameOver m s
       where
         b' = sPlaceBoard i j p b
-        g' = play InPlay i' j' p g
+        g' = play gm i' j' p g
 
 pickMMTree
     :: forall n b p m. (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
     => Sing p
     -> MMTree n b p
-    -> m (Option (ArgMax (RankRes p) (Move b)), Sing (BoardOver b))
+    -> m (Option (ArgMax (RankRes p) (Move b)), Found GameModeFor @@ b)
 pickMMTree p = \case
-    MMCutoff     -> pure (Option Nothing, SNothing)
-    MMGameOver s -> pure (Option Nothing, SJust s )
-    MMBranch bs  -> do
+    MMCutoff m   -> pure (Option Nothing, SNothing :&: m)
+    MMGameOver m s -> pure (Option Nothing, SJust s :&: m)
+    MMBranch m bs -> do
       bs' <- MWC.uniformShuffle (V.fromList (DM.toList bs)) =<< ask
       res <- withSingI p $
         F.foldM (F.sink go) bs'
-      pure (res, SNothing)
+      pure (res, SNothing :&: m)
   where
     go  :: DM.DSum Sing (SomeBranch n' b p)
         -> m (Option (ArgMax (RankRes p) (Move b)))
     go (ij DM.:=> SB m c) = Option . Just . Max . flip Arg (ij :&: c) . RR <$> do
-      (Option r, o) <- pickMMTree (sAltP p) m
+      (Option r, o :&: _) <- pickMMTree (sAltP p) m
       pure $ case r of
         Just (Max (Arg (RR r') _)) -> r'
         Nothing                    -> FromSing o

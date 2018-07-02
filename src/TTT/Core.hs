@@ -2,9 +2,11 @@
 {-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE InstanceSigs         #-}
+{-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeApplications     #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeInType           #-}
 {-# LANGUAGE TypeOperators        #-}
@@ -22,42 +24,42 @@ module TTT.Core (
   , lines, Lines, sLines
   , emptyBoard, EmptyBoard, sEmptyBoard
   , placeBoard, PlaceBoard, sPlaceBoard
-  , boardOver, BoardOver, sBoardOver
+  -- ** Predicates on data types
+  , Found
+  , Winner, Cats
+  , GameMode(..), GameModeFor
   -- * Represent game state and updates
-  , GameState(..), Update(..), Coord(..), InPlay(..)
+  , GameState(..)
+  , Update(..), Coord(..), InPlay, startInPlay
   , play
   -- ** Verify
   , Pick(..), pick
-  -- * Utility functions
-  , fullLine, FullLine, sFullLine
-  , findMaybe, FindMaybe, sFindMaybe
-  , winLine, WinLine, sWinLine
-  , allMatching, AllMatching, sAllMatching
   -- * Defunctionalization Symbols
+  , GOWinSym0, GOWinSym1, GOCatsSym0
   , BoardSym0
   , AltPSym0, AltPSym1
   , LinesSym0, LinesSym1
   , EmptyBoardSym0
   , PlaceBoardSym0, PlaceBoardSym1, PlaceBoardSym2, PlaceBoardSym3, PlaceBoardSym4
-  , BoardOverSym0, BoardOverSym1
-  , FullLineSym0, FullLineSym1
-  , FindMaybeSym0, FindMaybeSym1, FindMaybeSym2
-  , WinLineSym0, WinLineSym1
-  , AllMatchingSym0, AllMatchingSym1, AllMatchingSym2
   ) where
 
-import           Control.Monad
 import           Data.Kind
-import           Data.List hiding                      (lines)
+import           Data.List hiding                    (lines)
 import           Data.Singletons.Decide
-import           Data.Singletons.Prelude
-import           Data.Singletons.Prelude.List
-import           Data.Singletons.Prelude.Monad
+import           Data.Singletons.Prelude hiding      (All, Any, Not)
+import           Data.Singletons.Prelude.List hiding (All, Any)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Nat
+import           Data.Type.Predicate
+import           Data.Type.Predicate.Param
 import           Data.Type.Sel
-import           Prelude hiding                        (lines)
+import           Data.Type.Universe
+import           Prelude hiding                      (lines)
+
+-- ********************************
+--  Types and type-level functions
+-- ********************************
 
 $(singletons [d|
   data Piece = PX | PO
@@ -67,6 +69,7 @@ $(singletons [d|
                 | GOWin Piece
     deriving (Show, Eq)
 
+  -- Alternate the piece; used to pick "next player"
   altP :: Piece -> Piece
   altP PX = PO
   altP PO = PX
@@ -75,61 +78,91 @@ $(singletons [d|
   diagonal []          = []
   diagonal ((x:_):xss) = x : diagonal (map (drop 1) xss)
 
+  -- Get all winnable three-in-a-row lines from a board
   lines :: [[a]] -> [[a]]
   lines xs = concat [ xs
                     , transpose xs
                     , [diagonal xs, diagonal (reverse xs)]
                     ]
 
+  -- Representation of a board
   type Board = [[Maybe Piece]]
 
+  -- The empty (starting) board
   emptyBoard :: Board
   emptyBoard = [ [Nothing, Nothing, Nothing]
                , [Nothing, Nothing, Nothing]
                , [Nothing, Nothing, Nothing]
                ]
 
-  -- proofs in "TTT.Proofs"
+  -- Place a piece on a board at given coordinates
   placeBoard :: N -> N -> Piece -> Board -> Board
   placeBoard i j p = mapIx i (setIx j (Just p))
-
-  (<|>) :: Maybe a -> Maybe a -> Maybe a
-  Just x  <|> _ = Just x
-  Nothing <|> y = y
-
-  findMaybe :: (a -> Maybe b) -> [a] -> Maybe b
-  findMaybe _ []     = Nothing
-  findMaybe f (x:xs) = f x <|> findMaybe f xs
-
-  -- proofs in "TTT.Proofs"
-  winLine :: [Maybe Piece] -> Maybe Piece
-  winLine []     = Nothing
-  winLine (Nothing:_ ) = Nothing
-  winLine (Just x :xs) = allMatching x xs
-
-  -- proofs in "TTT.Proofs"
-  allMatching :: Piece -> [Maybe Piece] -> Maybe Piece
-  allMatching x []           = Just x
-  allMatching _ (Nothing:_ ) = Nothing
-  allMatching x (Just y :ys) = do
-     guard (x == y)
-     mfilter (== x) $ allMatching y ys
-
-  -- proofs in "TTT.Proofs"
-  fullLine :: [Maybe Piece] -> Bool
-  fullLine []           = True
-  fullLine (Nothing:_ ) = False
-  fullLine (Just _ :xs) = fullLine xs
-
-  -- proofs in "TTT.Proofs"
-  boardOver :: Board -> Maybe GameOver
-  boardOver b = (GOWin  <$> findMaybe winLine (lines b))
-            <|> (GOCats <$  guard (all fullLine b)     )
   |])
 
--- | Witness that a given board is in play
-data InPlay :: Board -> Type where
-    InPlay :: (BoardOver b ~ 'Nothing) => InPlay b
+-- ********************************
+--  Predicates
+-- ********************************
+
+-- | Witness that a piece has won a row
+data Victory :: [Maybe Piece] -> Piece -> Type where
+    Victory :: All [] (EqualTo ('Just p)) @@ as
+            -> Victory ('Just p ': as) p
+
+-- | Parameterized Predicate that a given line has a given victor
+data LineWon :: ParamPred [Maybe Piece] Piece
+type instance Apply (LineWon as) p = Victory as p
+
+instance Search LineWon where
+    search = \case
+      SNil -> Disproved $ \case
+        _ :&: v -> case v of {}
+      SNothing `SCons` _ -> Disproved $ \case
+        _ :&: v -> case v of {}
+      SJust (x@Sing :: Sing p) `SCons` xs -> case decide @(All [] (EqualTo ('Just p))) xs of
+        Proved p    -> Proved $ x :&: Victory p
+        Disproved r -> Disproved $ \case
+          _ :&: Victory a -> r a
+
+-- | Predicate that a board is won by a given player
+type Winner = (PPMap LinesSym0 (AnyMatch [] LineWon) :: ParamPred Board Piece)
+
+-- | Predicate that all spots have been played (cats game).
+--
+-- @
+-- 'Cats' :: 'Predicate' 'Board'
+-- @
+type Cats = (All [] (All [] (Any Maybe Evident)) :: Predicate Board)
+
+-- ********************************
+--  Witnesses
+-- ********************************
+
+-- | Witness that a game is in a specific mode.
+--
+-- Generate using 'Taken' for 'Found GameModeFOr'.
+data GameMode :: Board -> Maybe GameOver -> Type where
+    GMVictory :: Winner b @@ p
+              -> GameMode b ('Just ('GOWin p))
+    GMCats    :: Not (Found Winner) @@ b
+              -> Cats @@ b
+              -> GameMode b ('Just 'GOCats)
+    GMInPlay  :: Not (Found Winner) @@ b
+              -> Not Cats @@ b
+              -> GameMode b 'Nothing
+
+data GameModeFor :: ParamPred Board (Maybe GameOver)
+type instance Apply (GameModeFor b) o = GameMode b o
+
+instance Search GameModeFor
+instance Search_ GameModeFor where
+    search_ b = case decide @(Found Winner) b of
+      Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
+      Disproved r -> case decide @Cats b of
+        Proved (c :: Cats @@ b) -> SJust SGOCats :&: GMCats r c
+        Disproved r' -> SNothing :&: GMInPlay r r'
+
+type InPlay b = GameMode b 'Nothing
 
 -- | Represents a board and coordinate with the current item at position on
 -- the board.
@@ -177,6 +210,17 @@ data GameState :: Piece -> Board -> Type where
              -> Update ij p        b1 b2
              -> GameState p        b1
              -> GameState (AltP p)    b2
+
+-- | The empty board is in-play.
+startInPlay :: InPlay EmptyBoard
+startInPlay = GMInPlay noVictor noCats
+  where
+    noVictor :: Refuted (Σ Piece (Winner EmptyBoard))
+    noVictor (_ :&: WitAny s (Victory _)) = case s of                  -- data kinds trips up ghc
+      IS (IS (IS (IS (IS (IS (IS (IS t))))))) -> case t of {}
+    noCats :: Refuted (Cats @@ EmptyBoard)
+    noCats a = case runWitAll (runWitAll a IZ) IZ of
+      WitAny i _ -> case i of {}
 
 -- | Type-safe "play".
 play
