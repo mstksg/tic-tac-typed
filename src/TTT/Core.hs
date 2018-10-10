@@ -158,7 +158,7 @@ type instance Apply (GameModeFor b) o = GameMode b o
 
 instance Decidable (Found GameModeFor)
 instance Provable (Found GameModeFor) where
-    prove b = case decide @(Found Winner) b of
+    prove b = case search @Winner b of
       Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
       Disproved r -> case decide @Cats b of
         Proved (c :: Cats @@ b) -> SJust SGOCats :&: GMCats r c

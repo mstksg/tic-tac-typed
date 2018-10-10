@@ -87,7 +87,7 @@ minimax b r p g n = do
   where
     go :: Move b -> m (Option (Max (Arg (RankRes p) (Move b))))
     go m@(STuple2 i j :&: Coord i' j') = do
-      res <- case prove @(Found GameModeFor) b' of
+      res <- case select @GameModeFor b' of
         SNothing :&: gm -> case n of
           Z    -> pure @m . pure @Option $ Nothing
           S n' -> fmap (getRR . getArg . getMax) <$>
@@ -161,7 +161,7 @@ buildMMTree b gm@(GMInPlay _ _) p g = \case
         -> Move b
         -> DM.DSum Sing (SomeBranch n' b p)
     go n' (STuple2 i j :&: c@(Coord i' j')) = (STuple2 i j DM.:=>) . flip SB c $
-        case prove @(Found GameModeFor) b' of
+        case select @GameModeFor b' of
           SNothing :&: m -> buildMMTree b' m (sAltP p) g' n'
           SJust s  :&: m -> MMGameOver m s
       where
