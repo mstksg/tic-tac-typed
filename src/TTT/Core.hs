@@ -134,7 +134,7 @@ type Winner = (PPMap LinesSym0 (AnyMatch [] LineWon) :: ParamPred Board Piece)
 -- @
 -- 'Cats' :: 'Predicate' 'Board'
 -- @
-type Cats = (All [] (All [] (Any Maybe Evident)) :: Predicate Board)
+type Cats = (All [] (All [] (NotNull Maybe)) :: Predicate Board)
 
 -- ********************************
 --  Witnesses
@@ -152,6 +152,8 @@ data GameMode :: Board -> Maybe GameOver -> Type where
     GMInPlay  :: Not (Found Winner) @@ b
               -> Not Cats @@ b
               -> GameMode b 'Nothing
+
+-- | TODO: GMInPlay is redundant?  can just be Not (GameMode) ?
 
 data GameModeFor :: ParamPred Board (Maybe GameOver)
 type instance Apply (GameModeFor b) o = GameMode b o
