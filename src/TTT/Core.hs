@@ -1,17 +1,19 @@
-{-# LANGUAGE EmptyCase            #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE InstanceSigs         #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TemplateHaskell      #-}
-{-# LANGUAGE TypeApplications     #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE TypeInType           #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE TypeSynonymInstances #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE EmptyCase             #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE InstanceSigs          #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE QuantifiedConstraints #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE StandaloneDeriving    #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeApplications      #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeInType            #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE TypeSynonymInstances  #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module TTT.Core (
   -- * Data Types
@@ -113,8 +115,8 @@ data Victory :: [Maybe Piece] -> Piece -> Type where
 data LineWon :: ParamPred [Maybe Piece] Piece
 type instance Apply (LineWon as) p = Victory as p
 
-instance Search LineWon where
-    search = \case
+instance Decidable (Found LineWon) where
+    decide = \case
       SNil -> Disproved $ \case
         _ :&: v -> case v of {}
       SNothing `SCons` _ -> Disproved $ \case
@@ -154,9 +156,9 @@ data GameMode :: Board -> Maybe GameOver -> Type where
 data GameModeFor :: ParamPred Board (Maybe GameOver)
 type instance Apply (GameModeFor b) o = GameMode b o
 
-instance Search GameModeFor
-instance Search_ GameModeFor where
-    search_ b = case decide @(Found Winner) b of
+instance Decidable (Found GameModeFor)
+instance Provable (Found GameModeFor) where
+    prove b = case decide @(Found Winner) b of
       Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
       Disproved r -> case decide @Cats b of
         Proved (c :: Cats @@ b) -> SJust SGOCats :&: GMCats r c
