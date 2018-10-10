@@ -40,8 +40,8 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
-- git: https://github.com/mstksg/decidable-predicates.git
-  commit: cdf73437e3ee580438dc1a5a12bb537a63fff8f1
+- git: https://github.com/mstksg/decidable.git
+  commit: 52e4cf8fc2ed0d3a7785ba1dae5c090eb8c1e90a
 
 # Override default flag values for local packages and extra-deps
 # flags: {}

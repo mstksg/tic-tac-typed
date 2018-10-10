@@ -17,7 +17,6 @@ import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Nat
-import           Data.Type.Predicate
 import           Data.Type.Predicate.Param
 import           TTT.Controller
 import           TTT.Controller.Console

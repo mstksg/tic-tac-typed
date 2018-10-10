@@ -32,7 +32,6 @@ import           Data.Singletons.Prelude hiding  (Min, Max)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH hiding       (Min, Max)
 import           Data.Type.Nat
-import           Data.Type.Predicate
 import           Data.Type.Predicate.Param
 import           TTT.Controller
 import           TTT.Core
