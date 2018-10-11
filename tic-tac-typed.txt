@@ -152,16 +152,17 @@ type Winner = (PPMap LinesSym0 (AnyMatch [] LineWon) :: ParamPred Board Piece)
 --   <pre>
 --   <a>Cats</a> :: <a>Predicate</a> <a>Board</a>
 --   </pre>
-type Cats = (All [] (All [] (Any Maybe Evident)) :: Predicate Board)
+type Cats = (All [] (All [] (NotNull Maybe)) :: Predicate Board)
 
 -- | Witness that a game is in a specific mode.
 --   
 --   Generate using <tt>Taken</tt> for 'Found GameModeFOr'.
-data GameMode :: Board -> Maybe GameOver -> Type
-[GMVictory] :: (Winner b @@ p) -> GameMode b ( 'Just ( 'GOWin p))
-[GMCats] :: (Not (Found Winner) @@ b) -> (Cats @@ b) -> GameMode b ( 'Just  'GOCats)
-[GMInPlay] :: (Not (Found Winner) @@ b) -> (Not Cats @@ b) -> GameMode b  'Nothing
-data GameModeFor :: ParamPred Board (Maybe GameOver)
+data GameMode :: Board -> GameOver -> Type
+[GMVictory] :: (Winner b @@ p) -> GameMode b ( 'GOWin p)
+[GMCats] :: (Not (Found Winner) @@ b) -> (Cats @@ b) -> GameMode b  'GOCats
+
+-- | TODO: GMInPlay is redundant? can just be Not (GameMode) ?
+data GameModeFor :: ParamPred Board GameOver
 
 -- | Current board and currently expected player.
 --   
@@ -169,7 +170,7 @@ data GameModeFor :: ParamPred Board (Maybe GameOver)
 --   game state.
 data GameState :: Piece -> Board -> Type
 [GSStart] :: GameState  'PX EmptyBoard
-[GSUpdate] :: InPlay b1 -> Update ij p b1 b2 -> GameState p b1 -> GameState (AltP p) b2
+[GSUpdate] :: (InPlay @@ b1) -> Update ij p b1 b2 -> GameState p b1 -> GameState (AltP p) b2
 
 -- | Represents a legal update to a board (in-bounds, and does not
 --   overwrite a played piece)
@@ -180,13 +181,13 @@ data Update :: (N, N) -> Piece -> Board -> Board -> Type
 --   the board.
 data Coord :: Board -> Maybe Piece -> (N, N) -> Type
 [Coord] :: Sel i b row -> Sel j row p -> Coord b p '(i, j)
-type InPlay b = GameMode b  'Nothing
+type InPlay = Not (Found GameModeFor)
 
 -- | The empty board is in-play.
-startInPlay :: InPlay EmptyBoard
+startInPlay :: InPlay @@ EmptyBoard
 
 -- | Type-safe "play".
-play :: forall b i j row p. () => InPlay b -> Sel i b row -> Sel j row  'Nothing -> Sing p -> GameState p b -> GameState (AltP p) (PlaceBoard i j p b)
+play :: forall b i j row p. () => (InPlay @@ b) -> Sel i b row -> Sel j row  'Nothing -> Sing p -> GameState p b -> GameState (AltP p) (PlaceBoard i j p b)
 
 -- | Potential results of <a>pick</a>: A verified move, or one of many
 --   failures (with proof of failures)
@@ -219,7 +220,6 @@ instance GHC.Show.Show TTT.Core.Piece
 instance GHC.Show.Show (Data.Singletons.Internal.Sing z)
 instance Data.Singletons.ShowSing.ShowSing TTT.Core.Piece => GHC.Show.Show (Data.Singletons.Internal.Sing z)
 instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.GameModeFor)
-instance Data.Type.Predicate.Provable (Data.Type.Predicate.Param.Found TTT.Core.GameModeFor)
 instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.LineWon)
 instance Data.Singletons.Prelude.Eq.PEq TTT.Core.GameOver
 instance Data.Singletons.Prelude.Eq.PEq TTT.Core.Piece
@@ -265,9 +265,9 @@ module TTT.Controller
 type Controller m p = forall b. CContext p b -> m (Maybe (Move b))
 type Move b = Σ (N, N) (TyCon (Coord b  'Nothing))
 data CContext p b
-CC :: Sing b -> InPlay b -> GameState p b -> Sing p -> CContext p b
+CC :: Sing b -> (InPlay @@ b) -> GameState p b -> Sing p -> CContext p b
 [_ccBoard] :: CContext p b -> Sing b
-[_ccInPlay] :: CContext p b -> InPlay b
+[_ccInPlay] :: CContext p b -> InPlay @@ b
 [_ccGameState] :: CContext p b -> GameState p b
 [_ccPlayer] :: CContext p b -> Sing p
 
