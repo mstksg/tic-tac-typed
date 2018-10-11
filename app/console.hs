@@ -19,6 +19,8 @@ import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Nat
+import           Data.Type.Predicate
+import           Data.Type.Predicate.Logic
 import           Data.Type.Predicate.Param
 import           TTT.Controller
 import           TTT.Controller.Console
@@ -26,8 +28,8 @@ import           TTT.Controller.Minimax
 import           TTT.Core
 import qualified System.Random.MWC          as MWC
 
-type StateInPlay p b = (GameState p b, InPlay @@ b)
-genDefunSymbols [''StateInPlay]
+data StateInPlay :: Piece ~> Predicate Board
+type instance Apply StateInPlay p = TyPred (GameState p) &&& InPlay
 
 playerX
     :: (MonadIO m, MonadReader (MWC.Gen (PrimState m)) m, PrimMonad m)
@@ -67,7 +69,7 @@ runGame
     => Controller m 'PX
     -> Controller m 'PO
     -> EndoM (ExceptT (Board, Exit) m)
-             (Σ (Piece, Board) (UncurrySym1 StateInPlaySym0))
+             (Σ (Piece, Board) (UncurrySym1 StateInPlay))
 runGame cX cO (STuple2 p b :&: (g, r)) = case p of
     SPX -> do
       b' :&: (g', r') <- runController SPX cX (b :&: (g, r))
@@ -80,8 +82,8 @@ runController
     :: Monad m
     => Sing p
     -> Controller m p
-    -> Σ Board (StateInPlaySym1 p)
-    -> ExceptT (Board, Exit) m (Σ Board (StateInPlaySym1 (AltP p)))
+    -> Σ Board (StateInPlay @@ p)
+    -> ExceptT (Board, Exit) m (Σ Board (StateInPlay @@ AltP p))
 runController p c (b :&: (g, r)) = do
     move <- lift $ c CC { _ccBoard = b
                         , _ccInPlay = r
