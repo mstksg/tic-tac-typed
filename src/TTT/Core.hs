@@ -143,30 +143,31 @@ type Cats = (All [] (All [] (NotNull Maybe)) :: Predicate Board)
 -- | Witness that a game is in a specific mode.
 --
 -- Generate using 'Taken' for 'Found GameModeFOr'.
-data GameMode :: Board -> Maybe GameOver -> Type where
+data GameMode :: Board -> GameOver -> Type where
     GMVictory :: Winner b @@ p
-              -> GameMode b ('Just ('GOWin p))
+              -> GameMode b ('GOWin p)
     GMCats    :: Not (Found Winner) @@ b
               -> Cats @@ b
-              -> GameMode b ('Just 'GOCats)
-    GMInPlay  :: Not (Found Winner) @@ b
-              -> Not Cats @@ b
-              -> GameMode b 'Nothing
+              -> GameMode b ('GOCats)
+    -- GMInPlay  :: Not (Found Winner) @@ b
+    --           -> Not Cats @@ b
+    --           -> GameMode b 'Nothing
 
 -- | TODO: GMInPlay is redundant?  can just be Not (GameMode) ?
 
-data GameModeFor :: ParamPred Board (Maybe GameOver)
+data GameModeFor :: ParamPred Board GameOver
 type instance Apply (GameModeFor b) o = GameMode b o
 
-instance Decidable (Found GameModeFor)
-instance Provable (Found GameModeFor) where
-    prove b = case search @Winner b of
-      Proved (p :&: v) -> SJust (SGOWin p) :&: GMVictory v
-      Disproved r -> case decide @Cats b of
-        Proved (c :: Cats @@ b) -> SJust SGOCats :&: GMCats r c
-        Disproved r' -> SNothing :&: GMInPlay r r'
+instance Decidable (Found GameModeFor) where
+    decide b = case search @Winner b of
+        Proved (p :&: v) -> Proved $ SGOWin p :&: GMVictory v
+        Disproved r      -> case decide @Cats b of
+          Proved c     -> Proved $ SGOCats :&: GMCats r c
+          Disproved r' -> Disproved $ \case
+            SGOWin p :&: GMVictory v -> r $ p :&: v
+            SGOCats  :&: GMCats _ c  -> r' c
 
-type InPlay b = GameMode b 'Nothing
+type InPlay = Not (Found GameModeFor)
 
 -- | Represents a board and coordinate with the current item at position on
 -- the board.
@@ -210,14 +211,16 @@ pick i j b = case listSel i b of
 -- state.
 data GameState :: Piece -> Board -> Type where
     GSStart  :: GameState 'PX EmptyBoard
-    GSUpdate :: InPlay b1
+    GSUpdate :: InPlay @@ b1
              -> Update ij p        b1 b2
              -> GameState p        b1
              -> GameState (AltP p)    b2
 
 -- | The empty board is in-play.
-startInPlay :: InPlay EmptyBoard
-startInPlay = GMInPlay noVictor noCats
+startInPlay :: InPlay @@ EmptyBoard
+startInPlay = \case
+    SGOWin p :&: GMVictory v -> noVictor (p :&: v)
+    SGOCats  :&: GMCats _ c  -> noCats c
   where
     noVictor :: Refuted (Σ Piece (Winner EmptyBoard))
     noVictor (_ :&: WitAny s (Victory _)) = case s of                  -- data kinds trips up ghc
@@ -229,7 +232,7 @@ startInPlay = GMInPlay noVictor noCats
 -- | Type-safe "play".
 play
     :: forall b i j row p. ()
-    => InPlay b
+    => InPlay @@ b
     -> Sel i b    row
     -> Sel j row 'Nothing
     -> Sing p

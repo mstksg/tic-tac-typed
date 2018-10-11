@@ -1,11 +1,13 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs            #-}
-{-# LANGUAGE KindSignatures   #-}
-{-# LANGUAGE RankNTypes       #-}
-{-# LANGUAGE TemplateHaskell  #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeFamilies     #-}
-{-# LANGUAGE TypeInType       #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE GADTs                #-}
+{-# LANGUAGE KindSignatures       #-}
+{-# LANGUAGE RankNTypes           #-}
+{-# LANGUAGE TemplateHaskell      #-}
+{-# LANGUAGE TypeApplications     #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE TypeInType           #-}
+{-# LANGUAGE TypeOperators        #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 import           Control.Monad
 import           Control.Monad.IO.Class
@@ -24,7 +26,7 @@ import           TTT.Controller.Minimax
 import           TTT.Core
 import qualified System.Random.MWC          as MWC
 
-type StateInPlay p b = (GameState p b, InPlay b)
+type StateInPlay p b = (GameState p b, InPlay @@ b)
 genDefunSymbols [''StateInPlay]
 
 playerX
@@ -91,6 +93,6 @@ runController p c (b :&: (g, r)) = do
       Just (STuple2 i j :&: Coord i' j') -> do
         let b' = sPlaceBoard i j p b
             g' = play r i' j' p g
-        case select @GameModeFor b' of
-          SNothing :&: m -> pure   $ b' :&: (g', m)
-          SJust s  :&: _ -> throwE (FromSing b', EGameOver (FromSing s))
+        case search @GameModeFor b' of
+          Proved (s :&: _) -> throwE (FromSing b', EGameOver (FromSing s))
+          Disproved m      -> pure $ b' :&: (g', m)

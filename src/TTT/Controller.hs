@@ -5,6 +5,7 @@
 {-# LANGUAGE RankNTypes       #-}
 {-# LANGUAGE RecordWildCards  #-}
 {-# LANGUAGE TypeFamilies     #-}
+{-# LANGUAGE TypeOperators    #-}
 
 module TTT.Controller (
     Controller, Move, CContext(..)
@@ -31,7 +32,7 @@ import qualified System.Random.MWC.Distributions as MWC
 type Move b = Σ (N, N) (TyCon (Coord b 'Nothing))
 
 data CContext p b = CC { _ccBoard     :: Sing b
-                       , _ccInPlay    :: InPlay b
+                       , _ccInPlay    :: InPlay @@ b
                        , _ccGameState :: GameState p b
                        , _ccPlayer    :: Sing p
                        }
