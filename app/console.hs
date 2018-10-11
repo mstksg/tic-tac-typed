@@ -42,7 +42,7 @@ playerO = faulty 0.1 $ minimaxController cats
     cats = S (S (S (S (S Z))))
 
 data Exit = EForfeit Piece
-          | EGameOver GameOver
+          | EGameOver Result
 
 main :: IO ()
 main = MWC.withSystemRandom $ \g -> do
@@ -53,9 +53,9 @@ main = MWC.withSystemRandom $ \g -> do
     putStrLn "Game over!"
     putStrLn $ displayBoard b
     putStrLn $ case e of
-      EForfeit  p         -> "Forfeit by " ++ show p
-      EGameOver GOCats    -> "Cat's game :("
-      EGameOver (GOWin w) -> "Winner: " ++ show w
+      EForfeit  p          -> "Forfeit by " ++ show p
+      EGameOver ResCats    -> "Cat's game :("
+      EGameOver (ResWin w) -> "Winner: " ++ show w
 
 type EndoM m a = a -> m a
 
@@ -93,6 +93,6 @@ runController p c (b :&: (g, r)) = do
       Just (STuple2 i j :&: Coord i' j') -> do
         let b' = sPlaceBoard i j p b
             g' = play r i' j' p g
-        case search @GameModeFor b' of
+        case search @GameOver b' of
           Proved (s :&: _) -> throwE (FromSing b', EGameOver (FromSing s))
           Disproved m      -> pure $ b' :&: (g', m)

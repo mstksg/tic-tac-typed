@@ -18,9 +18,9 @@
 module TTT.Core (
   -- * Data Types
     Piece(..), SPiece
-  , GameOver(..), SGameOver
+  , Result(..), SResult
   , Board
-  , Sing(SPX, SPO, SGOWin, SGOCats)
+  , Sing(SPX, SPO, SResWin, SResCats)
   -- ** Functions on data types
   , altP, AltP, sAltP
   , lines, Lines, sLines
@@ -29,7 +29,7 @@ module TTT.Core (
   -- ** Predicates on data types
   , Found
   , Winner, Cats
-  , GameMode(..), GameModeFor
+  , BoardResult(..), GameOver
   -- * Represent game state and updates
   , GameState(..)
   , Update(..), Coord(..), InPlay, startInPlay
@@ -37,7 +37,7 @@ module TTT.Core (
   -- ** Verify
   , Pick(..), pick
   -- * Defunctionalization Symbols
-  , GOWinSym0, GOWinSym1, GOCatsSym0
+  , ResWinSym0, ResWinSym1, ResCatsSym0
   , BoardSym0
   , AltPSym0, AltPSym1
   , LinesSym0, LinesSym1
@@ -67,8 +67,8 @@ $(singletons [d|
   data Piece = PX | PO
     deriving (Show, Eq)
 
-  data GameOver = GOCats
-                | GOWin Piece
+  data Result = ResCats
+              | ResWin Piece
     deriving (Show, Eq)
 
   -- Alternate the piece; used to pick "next player"
@@ -142,32 +142,27 @@ type Cats = (All [] (All [] (NotNull Maybe)) :: Predicate Board)
 
 -- | Witness that a game is in a specific mode.
 --
--- Generate using 'Taken' for 'Found GameModeFOr'.
-data GameMode :: Board -> GameOver -> Type where
+-- Generate using 'Taken' for 'Found BoardResultFOr'.
+data BoardResult :: Board -> Result -> Type where
     GMVictory :: Winner b @@ p
-              -> GameMode b ('GOWin p)
+              -> BoardResult b ('ResWin p)
     GMCats    :: Not (Found Winner) @@ b
               -> Cats @@ b
-              -> GameMode b ('GOCats)
-    -- GMInPlay  :: Not (Found Winner) @@ b
-    --           -> Not Cats @@ b
-    --           -> GameMode b 'Nothing
+              -> BoardResult b ('ResCats)
 
--- | TODO: GMInPlay is redundant?  can just be Not (GameMode) ?
+data GameOver :: ParamPred Board Result
+type instance Apply (GameOver b) o = BoardResult b o
 
-data GameModeFor :: ParamPred Board GameOver
-type instance Apply (GameModeFor b) o = GameMode b o
-
-instance Decidable (Found GameModeFor) where
+instance Decidable (Found GameOver) where
     decide b = case search @Winner b of
-        Proved (p :&: v) -> Proved $ SGOWin p :&: GMVictory v
+        Proved (p :&: v) -> Proved $ SResWin p :&: GMVictory v
         Disproved r      -> case decide @Cats b of
-          Proved c     -> Proved $ SGOCats :&: GMCats r c
+          Proved c     -> Proved $ SResCats :&: GMCats r c
           Disproved r' -> Disproved $ \case
-            SGOWin p :&: GMVictory v -> r $ p :&: v
-            SGOCats  :&: GMCats _ c  -> r' c
+            SResWin p :&: GMVictory v -> r $ p :&: v
+            SResCats  :&: GMCats _ c  -> r' c
 
-type InPlay = Not (Found GameModeFor)
+type InPlay = Not (Found GameOver)
 
 -- | Represents a board and coordinate with the current item at position on
 -- the board.
@@ -219,8 +214,8 @@ data GameState :: Piece -> Board -> Type where
 -- | The empty board is in-play.
 startInPlay :: InPlay @@ EmptyBoard
 startInPlay = \case
-    SGOWin p :&: GMVictory v -> noVictor (p :&: v)
-    SGOCats  :&: GMCats _ c  -> noCats c
+    SResWin p :&: GMVictory v -> noVictor (p :&: v)
+    SResCats  :&: GMCats _ c  -> noCats c
   where
     noVictor :: Refuted (Σ Piece (Winner EmptyBoard))
     noVictor (_ :&: WitAny s (Victory _)) = case s of                  -- data kinds trips up ghc
