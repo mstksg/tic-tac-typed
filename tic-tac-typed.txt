@@ -99,10 +99,10 @@ data Piece
 PX :: Piece
 PO :: Piece
 type SPiece = (Sing :: Piece -> Type)
-data GameOver
-GOCats :: GameOver
-GOWin :: Piece -> GameOver
-type SGameOver = (Sing :: GameOver -> Type)
+data Result
+ResCats :: Result
+ResWin :: Piece -> Result
+type SResult = (Sing :: Result -> Type)
 type Board = [[Maybe Piece]]
 
 -- | The singleton kind-indexed data family.
@@ -156,13 +156,11 @@ type Cats = (All [] (All [] (NotNull Maybe)) :: Predicate Board)
 
 -- | Witness that a game is in a specific mode.
 --   
---   Generate using <tt>Taken</tt> for 'Found GameModeFOr'.
-data GameMode :: Board -> GameOver -> Type
-[GMVictory] :: (Winner b @@ p) -> GameMode b ( 'GOWin p)
-[GMCats] :: (Not (Found Winner) @@ b) -> (Cats @@ b) -> GameMode b  'GOCats
-
--- | TODO: GMInPlay is redundant? can just be Not (GameMode) ?
-data GameModeFor :: ParamPred Board GameOver
+--   Generate using <tt>Taken</tt> for 'Found BoardResultFOr'.
+data BoardResult :: Board -> Result -> Type
+[GMVictory] :: (Winner b @@ p) -> BoardResult b ( 'ResWin p)
+[GMCats] :: (Not (Found Winner) @@ b) -> (Cats @@ b) -> BoardResult b  'ResCats
+data GameOver :: ParamPred Board Result
 
 -- | Current board and currently expected player.
 --   
@@ -181,7 +179,7 @@ data Update :: (N, N) -> Piece -> Board -> Board -> Type
 --   the board.
 data Coord :: Board -> Maybe Piece -> (N, N) -> Type
 [Coord] :: Sel i b row -> Sel j row p -> Coord b p '(i, j)
-type InPlay = Not (Found GameModeFor)
+type InPlay = Not (Found GameOver)
 
 -- | The empty board is in-play.
 startInPlay :: InPlay @@ EmptyBoard
@@ -199,9 +197,9 @@ data Pick :: N -> N -> Board -> Type
 
 -- | Validate a pick from given coordinates on a board
 pick :: Sing i -> Sing j -> Sing b -> Pick i j b
-data GOWinSym0 :: (~>) Piece GameOver
-type GOWinSym1 (t6989586621679225965 :: Piece) = GOWin t6989586621679225965
-type GOCatsSym0 = GOCats
+data ResWinSym0 :: (~>) Piece Result
+type ResWinSym1 (t6989586621679225965 :: Piece) = ResWin t6989586621679225965
+type ResCatsSym0 = ResCats
 type BoardSym0 = Board
 data AltPSym0 :: (~>) Piece Piece
 type AltPSym1 (a6989586621679225988 :: Piece) = AltP a6989586621679225988
@@ -213,18 +211,18 @@ data PlaceBoardSym1 (a6989586621679225967 :: N) :: (~>) N ((~>) Piece ((~>) [[Ma
 data PlaceBoardSym2 (a6989586621679225967 :: N) (a6989586621679225968 :: N) :: (~>) Piece ((~>) [[Maybe Piece]] [[Maybe Piece]])
 data PlaceBoardSym3 (a6989586621679225967 :: N) (a6989586621679225968 :: N) (a6989586621679225969 :: Piece) :: (~>) [[Maybe Piece]] [[Maybe Piece]]
 type PlaceBoardSym4 (a6989586621679225967 :: N) (a6989586621679225968 :: N) (a6989586621679225969 :: Piece) (a6989586621679225970 :: [[Maybe Piece]]) = PlaceBoard a6989586621679225967 a6989586621679225968 a6989586621679225969 a6989586621679225970
-instance GHC.Classes.Eq TTT.Core.GameOver
-instance GHC.Show.Show TTT.Core.GameOver
+instance GHC.Classes.Eq TTT.Core.Result
+instance GHC.Show.Show TTT.Core.Result
 instance GHC.Classes.Eq TTT.Core.Piece
 instance GHC.Show.Show TTT.Core.Piece
 instance GHC.Show.Show (Data.Singletons.Internal.Sing z)
 instance Data.Singletons.ShowSing.ShowSing TTT.Core.Piece => GHC.Show.Show (Data.Singletons.Internal.Sing z)
-instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.GameModeFor)
+instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.GameOver)
 instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.LineWon)
-instance Data.Singletons.Prelude.Eq.PEq TTT.Core.GameOver
+instance Data.Singletons.Prelude.Eq.PEq TTT.Core.Result
 instance Data.Singletons.Prelude.Eq.PEq TTT.Core.Piece
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679226027Sym0
-instance Data.Singletons.Prelude.Show.PShow TTT.Core.GameOver
+instance Data.Singletons.Prelude.Show.PShow TTT.Core.Result
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679226027Sym1 a6989586621679226024)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679226027Sym2 a6989586621679226025 a6989586621679226024)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679226005Sym0
@@ -245,15 +243,15 @@ instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core
 instance (Data.Singletons.Internal.SingI d1, Data.Singletons.Internal.SingI d2) => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym2 d1 d2)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym3 a6989586621679225969 a6989586621679225968 a6989586621679225967)
 instance (Data.Singletons.Internal.SingI d1, Data.Singletons.Internal.SingI d2, Data.Singletons.Internal.SingI d3) => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym3 d1 d2 d3)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.GOWinSym0
-instance Data.Singletons.Internal.SingI TTT.Core.GOWinSym0
-instance Data.Singletons.Internal.SingKind TTT.Core.GameOver
-instance Data.Singletons.Prelude.Show.SShow TTT.Core.Piece => Data.Singletons.Prelude.Show.SShow TTT.Core.GameOver
-instance Data.Singletons.Prelude.Eq.SEq TTT.Core.Piece => Data.Singletons.Prelude.Eq.SEq TTT.Core.GameOver
-instance Data.Singletons.Decide.SDecide TTT.Core.Piece => Data.Singletons.Decide.SDecide TTT.Core.GameOver
-instance Data.Singletons.Internal.SingI 'TTT.Core.GOCats
-instance Data.Singletons.Internal.SingI n => Data.Singletons.Internal.SingI ('TTT.Core.GOWin n)
-instance Data.Singletons.Internal.SingI (Data.Singletons.Internal.TyCon1 'TTT.Core.GOWin)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ResWinSym0
+instance Data.Singletons.Internal.SingI TTT.Core.ResWinSym0
+instance Data.Singletons.Internal.SingKind TTT.Core.Result
+instance Data.Singletons.Prelude.Show.SShow TTT.Core.Piece => Data.Singletons.Prelude.Show.SShow TTT.Core.Result
+instance Data.Singletons.Prelude.Eq.SEq TTT.Core.Piece => Data.Singletons.Prelude.Eq.SEq TTT.Core.Result
+instance Data.Singletons.Decide.SDecide TTT.Core.Piece => Data.Singletons.Decide.SDecide TTT.Core.Result
+instance Data.Singletons.Internal.SingI 'TTT.Core.ResCats
+instance Data.Singletons.Internal.SingI n => Data.Singletons.Internal.SingI ('TTT.Core.ResWin n)
+instance Data.Singletons.Internal.SingI (Data.Singletons.Internal.TyCon1 'TTT.Core.ResWin)
 instance Data.Singletons.Internal.SingKind TTT.Core.Piece
 instance Data.Singletons.Prelude.Show.SShow TTT.Core.Piece
 instance Data.Singletons.Prelude.Eq.SEq TTT.Core.Piece
@@ -302,8 +300,8 @@ minimaxController :: (PrimMonad m, MonadReader (Gen (PrimState m)) m) => N -> Co
 --   interprets the information it sees correctly.
 minimaxController' :: (PrimMonad m, MonadReader (Gen (PrimState m)) m) => N -> Controller m p
 newtype RankRes (p :: Piece)
-RR :: Maybe GameOver -> RankRes
-[getRR] :: RankRes -> Maybe GameOver
+RR :: Maybe Result -> RankRes
+[getRR] :: RankRes -> Maybe Result
 instance GHC.Classes.Eq (TTT.Controller.Minimax.RankRes p)
 instance GHC.Show.Show (TTT.Controller.Minimax.RankRes p)
 instance Data.Singletons.Internal.SingI p => GHC.Classes.Ord (TTT.Controller.Minimax.RankRes p)
