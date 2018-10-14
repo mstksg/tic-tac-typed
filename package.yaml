@@ -26,7 +26,7 @@ ghc-options:
 
 dependencies:
 - base >= 4.7 && < 5
-- decidable
+- decidable >= 0.1.2
 - mtl
 - mwc-random
 - primitive
@@ -42,7 +42,6 @@ library:
   - foldl
   - haskeline
   - vector
-  - profunctors
 
 executables:
   tic-tac-typed-console:

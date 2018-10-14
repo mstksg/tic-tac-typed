@@ -49,7 +49,6 @@ module TTT.Core (
 
 import           Data.Kind
 import           Data.List hiding                    (lines)
-import           Data.Profunctor
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude hiding      (All, Any, Not, Null)
 import           Data.Singletons.Prelude.List hiding (All, Any, Null)
