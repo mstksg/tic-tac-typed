@@ -201,6 +201,7 @@ data ResWinSym0 :: (~>) Piece Result
 type ResWinSym1 (t6989586621679228562 :: Piece) = ResWin t6989586621679228562
 type ResCatsSym0 = ResCats
 type BoardSym0 = Board
+type CompBoardSym0 = CompBoard
 data AltPSym0 :: (~>) Piece Piece
 type AltPSym1 (a6989586621679228585 :: Piece) = AltP a6989586621679228585
 data LinesSym0 :: forall a6989586621679225361. (~>) [[a6989586621679225361]] [[a6989586621679225361]]
