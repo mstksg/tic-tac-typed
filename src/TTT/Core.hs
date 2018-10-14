@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE QuantifiedConstraints #-}
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
@@ -39,6 +40,7 @@ module TTT.Core (
   -- * Defunctionalization Symbols
   , ResWinSym0, ResWinSym1, ResCatsSym0
   , BoardSym0
+  , CompBoardSym0
   , AltPSym0, AltPSym1
   , LinesSym0, LinesSym1
   , EmptyBoardSym0
@@ -47,14 +49,17 @@ module TTT.Core (
 
 import           Data.Kind
 import           Data.List hiding                    (lines)
+import           Data.Profunctor
 import           Data.Singletons.Decide
-import           Data.Singletons.Prelude hiding      (All, Any, Not)
-import           Data.Singletons.Prelude.List hiding (All, Any)
+import           Data.Singletons.Prelude hiding      (All, Any, Not, Null)
+import           Data.Singletons.Prelude.List hiding (All, Any, Null)
 import           Data.Singletons.Sigma
-import           Data.Singletons.TH
+import           Data.Singletons.TH hiding           (Null)
 import           Data.Type.Nat
 import           Data.Type.Predicate
+import           Data.Type.Predicate.Auto
 import           Data.Type.Predicate.Param
+import           Data.Type.Predicate.Quantification
 import           Data.Type.Sel
 import           Data.Type.Universe
 import           Prelude hiding                      (lines)
@@ -89,6 +94,7 @@ $(singletons [d|
 
   -- Representation of a board
   type Board = [[Maybe Piece]]
+  type CompBoard = ([] :.: []) (Maybe Piece)
 
   -- The empty (starting) board
   emptyBoard :: Board
@@ -126,6 +132,9 @@ instance Decidable (Found LineWon) where
         Disproved r -> Disproved $ \case
           _ :&: Victory a -> r a
 
+instance Auto (Not (Found LineWon)) ('Nothing ': as) where
+    auto (_ :&: w) = case w of {}
+
 -- | Predicate that a board is won by a given player
 type Winner = (PPMap LinesSym0 (AnyMatch [] LineWon) :: ParamPred Board Piece)
 
@@ -134,7 +143,7 @@ type Winner = (PPMap LinesSym0 (AnyMatch [] LineWon) :: ParamPred Board Piece)
 -- @
 -- 'Cats' :: 'Predicate' 'Board'
 -- @
-type Cats = (All [] (All [] (NotNull Maybe)) :: Predicate Board)
+type Cats = (All ([] :.: []) (NotNull Maybe) :: Predicate CompBoard)
 
 -- ********************************
 --  Witnesses
@@ -147,8 +156,8 @@ data BoardResult :: Board -> Result -> Type where
     GMVictory :: Winner b @@ p
               -> BoardResult b ('ResWin p)
     GMCats    :: Not (Found Winner) @@ b
-              -> Cats @@ b
-              -> BoardResult b ('ResCats)
+              -> Cats @@ 'Comp b
+              -> BoardResult b 'ResCats
 
 data GameOver :: ParamPred Board Result
 type instance Apply (GameOver b) o = BoardResult b o
@@ -156,7 +165,7 @@ type instance Apply (GameOver b) o = BoardResult b o
 instance Decidable (Found GameOver) where
     decide b = case search @Winner b of
         Proved (p :&: v) -> Proved $ SResWin p :&: GMVictory v
-        Disproved r      -> case decide @Cats b of
+        Disproved r      -> case decide @Cats (SComp b) of
           Proved c     -> Proved $ SResCats :&: GMCats r c
           Disproved r' -> Disproved $ \case
             SResWin p :&: GMVictory v -> r $ p :&: v
@@ -215,14 +224,12 @@ data GameState :: Piece -> Board -> Type where
 startInPlay :: InPlay @@ EmptyBoard
 startInPlay = \case
     SResWin p :&: GMVictory v -> noVictor (p :&: v)
-    SResCats  :&: GMCats _ c  -> noCats c
+    SResCats  :&: GMCats _ c  -> noCats   c
   where
-    noVictor :: Refuted (Σ Piece (Winner EmptyBoard))
-    noVictor (_ :&: WitAny s (Victory _)) = case s of                  -- data kinds trips up ghc
-      IS (IS (IS (IS (IS (IS (IS (IS t))))))) -> case t of {}
-    noCats :: Refuted (Cats @@ EmptyBoard)
-    noCats a = case runWitAll (runWitAll a IZ) IZ of
-      WitAny i _ -> case i of {}
+    noVictor :: Not (Found Winner) @@ EmptyBoard
+    noVictor = autoNot @_ @(Found Winner)  @EmptyBoard
+    noCats   :: Not Cats @@ 'Comp EmptyBoard
+    noCats   = autoNotAll @(NotNull Maybe) $ IZ :? IZ
 
 -- | Type-safe "play".
 play
