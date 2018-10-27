@@ -15,9 +15,9 @@
 
 module Data.Type.Sel (
     Sel(..)
-  , mapIx, sMapIx, MapIx
-  , setIx, sSetIx, SetIx
-  , overSel
+  -- , mapIx, sMapIx, MapIx
+  -- , setIx, sSetIx, SetIx
+  -- , overSel
   , setSel
   , listSel
   , OutOfBounds
@@ -42,6 +42,7 @@ import           Data.Singletons.TH
 import           Data.Type.Nat
 
 -- TODO: implement Sel in terms of Index?
+-- TODO: use lens-typelevel?
 
 -- | A @'Sel' n as a@ is an index into a list @as@ that the @n@th index is
 -- @a@.
@@ -57,18 +58,6 @@ $(singletons [d|
   setIx :: N -> a -> [a] -> [a]
   setIx i x = mapIx i (const x)
   |])
-
-overSel
-    :: forall k n (as :: [k]) (a :: k) (f :: k ~> k). ()
-    => Sel n as a
-    -> Sing f
-    -> Sing as
-    -> Sing (MapIx n f as)
-overSel = \case
-    SelZ -> \(SLambda f) -> \case
-      x `SCons` xs -> f x `SCons` xs
-    SelS n -> \f -> \case
-      x `SCons` xs -> x `SCons` overSel n f xs
 
 mapIx_proof
     :: forall n as a f. ()

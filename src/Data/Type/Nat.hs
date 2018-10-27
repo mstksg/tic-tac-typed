@@ -25,12 +25,12 @@ module Data.Type.Nat (
 
 import           Data.Kind
 import           Data.Singletons
+import           Data.Type.Lens
 import           Data.Singletons.TH
 
 $(singletons [d|
-  data N = Z | S N
-    deriving (Show, Eq, Ord)
-
+  deriving instance Eq N
+  deriving instance Ord N
 
   addN :: N -> N -> N
   addN Z     m = m

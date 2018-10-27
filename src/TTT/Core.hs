@@ -26,7 +26,7 @@ module TTT.Core (
   , altP, AltP, sAltP
   , lines, Lines, sLines
   , emptyBoard, EmptyBoard, sEmptyBoard
-  , placeBoard, PlaceBoard, sPlaceBoard
+  , PlaceBoard, sPlaceBoard
   -- ** Predicates on data types
   , Found
   , Winner, Cats
@@ -51,9 +51,11 @@ import           Data.Kind
 import           Data.List hiding                    (lines)
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude hiding      (All, Any, Not, Null)
+import           Data.Singletons.Prelude.Function
 import           Data.Singletons.Prelude.List hiding (All, Any, Null)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH hiding           (Null)
+import           Data.Type.Lens
 import           Data.Type.Nat
 import           Data.Type.Predicate
 import           Data.Type.Predicate.Auto
@@ -102,9 +104,10 @@ $(singletons [d|
                , [Nothing, Nothing, Nothing]
                ]
 
-  -- Place a piece on a board at given coordinates
-  placeBoard :: N -> N -> Piece -> Board -> Board
-  placeBoard i j p = mapIx i (setIx j (Just p))
+  |])
+
+$(singletonsOnly [d|
+  placeBoard i j p b = set (ixList i . ixList j) (Just p) b
   |])
 
 -- ********************************

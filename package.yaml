@@ -42,6 +42,7 @@ library:
   - foldl
   - haskeline
   - vector
+  - lens-typelevel
 
 executables:
   tic-tac-typed-console:
