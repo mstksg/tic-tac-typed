@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments   #-}
 {-# LANGUAGE PolyKinds        #-}
 {-# LANGUAGE RankNTypes       #-}
 {-# LANGUAGE RecordWildCards  #-}

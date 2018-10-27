@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments         #-}
 {-# LANGUAGE FlexibleContexts       #-}
 {-# LANGUAGE GADTs                  #-}
 {-# LANGUAGE KindSignatures         #-}
@@ -112,7 +113,7 @@ minimaxController'
     -> Controller m p
 minimaxController' n CC{..} = do
     Option mm <-  minimax' _ccBoard _ccInPlay _ccPlayer _ccGameState n
-    pure $ do
+    pure do
       Arg (RR res) m <- getMax <$> mm
       guard $ res /= Just (ResWin (FromSing (sAltP _ccPlayer)))
       pure m

@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments   #-}
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs            #-}
@@ -40,7 +41,7 @@ data CContext p b = CC { _ccBoard     :: Sing b
 type Controller m p = forall b. CContext p b -> m (Maybe (Move b))
 
 validMoves :: Sing b -> M.Map (N, N) (Move b)
-validMoves b = M.fromList $ do
+validMoves b = M.fromList do
     (FromSing i, row) <- zip (iterate S Z) (FromSing b)
     (FromSing j, _  ) <- zip (iterate S Z) row
     PickValid i' j'   <- pure $ pick i j b

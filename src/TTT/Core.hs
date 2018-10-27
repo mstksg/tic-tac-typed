@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments        #-}
 {-# LANGUAGE EmptyCase             #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
@@ -51,12 +52,10 @@ import           Data.Kind
 import           Data.List hiding                    (lines)
 import           Data.Singletons.Decide
 import           Data.Singletons.Prelude hiding      (All, Any, Not, Null)
-import           Data.Singletons.Prelude.Function
 import           Data.Singletons.Prelude.List hiding (All, Any, Null)
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH hiding           (Null)
 import           Data.Type.Lens
-import           Data.Type.Nat
 import           Data.Type.Predicate
 import           Data.Type.Predicate.Auto
 import           Data.Type.Predicate.Param
@@ -125,13 +124,13 @@ type instance Apply (LineWon as) p = Victory as p
 
 instance Decidable (Found LineWon) where
     decide = \case
-      SNil -> Disproved $ \case
+      SNil -> Disproved \case
         _ :&: v -> case v of {}
-      SNothing `SCons` _ -> Disproved $ \case
+      SNothing `SCons` _ -> Disproved \case
         _ :&: v -> case v of {}
       SJust (x@Sing :: Sing p) `SCons` xs -> case decide @(All [] (EqualTo ('Just p))) xs of
         Proved p    -> Proved $ x :&: Victory p
-        Disproved r -> Disproved $ \case
+        Disproved r -> Disproved \case
           _ :&: Victory a -> r a
 
 instance Auto (Not (Found LineWon)) ('Nothing ': as) where
@@ -169,7 +168,7 @@ instance Decidable (Found GameOver) where
         Proved (p :&: v) -> Proved $ SResWin p :&: GMVictory v
         Disproved r      -> case decide @Cats (SComp b) of
           Proved c     -> Proved $ SResCats :&: GMCats r c
-          Disproved r' -> Disproved $ \case
+          Disproved r' -> Disproved \case
             SResWin p :&: GMVictory v -> r $ p :&: v
             SResCats  :&: GMCats _ c  -> r' c
 

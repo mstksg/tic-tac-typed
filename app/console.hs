@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE FlexibleContexts     #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE KindSignatures       #-}
@@ -47,7 +48,7 @@ data Exit = EForfeit Piece
           | EGameOver Result
 
 main :: IO ()
-main = MWC.withSystemRandom $ \g -> do
+main = MWC.withSystemRandom \g -> do
     Left (b,e) <- flip runReaderT g
                 . runExceptT
                 . chainForever (runGame playerX playerO) $
