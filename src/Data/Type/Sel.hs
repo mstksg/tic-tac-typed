@@ -17,6 +17,7 @@ module Data.Type.Sel (
     Sel(..)
   , InBounds, OutOfBounds
   , TyPP
+  , Coord(..)
   -- , ixSel
   -- , sameSel
   ) where
@@ -59,6 +60,12 @@ instance SingI n => Decidable (InBounds n) where
               Disproved v      -> Disproved \case
                 y :&: s -> case s of
                   SelS m -> v (y :&: m)
+
+-- | Represents a 2-d 'Sel'.
+data Coord :: [[k]] -> k -> (N, N) -> Type where
+    Coord :: Sel i xss xs
+          -> Sel j xs  x
+          -> Coord xss x '(i, j)
 
 -- ixSel :: Sing as -> Sel n as a -> Sing a
 -- ixSel = \case

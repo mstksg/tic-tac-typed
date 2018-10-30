@@ -172,13 +172,6 @@ instance Decidable (Found (TyPP GameOver)) where
 -- | A predicate that a game is still in play
 type InPlay = Not (Found (TyPP GameOver))
 
--- | Represents a board and coordinate with the current item at position on
--- the board.
-data Coord :: Board -> Maybe Piece -> (N, N) -> Type where
-    Coord :: Sel i b   row
-          -> Sel j row p
-          -> Coord b p '(i, j)
-
 -- | Represents a legal update to a board (in-bounds, and does not
 -- overwrite a played piece)
 data Update :: (N, N) -> Piece -> Board -> Board -> Type where

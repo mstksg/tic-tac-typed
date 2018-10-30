@@ -32,7 +32,7 @@ import qualified Data.Vector                     as V
 import qualified System.Random.MWC               as MWC
 import qualified System.Random.MWC.Distributions as MWC
 
-type Move b = Σ (N, N) (TyCon (Coord b 'Nothing))
+type Move (b :: Board) = Σ (N, N) (TyCon (Coord b 'Nothing))
 
 data CContext p b = CC { _ccBoard     :: Sing b
                        , _ccInPlay    :: InPlay @@ b
@@ -42,7 +42,9 @@ data CContext p b = CC { _ccBoard     :: Sing b
 
 type Controller m p = forall b. CContext p b -> m (Maybe (Move b))
 
-validMoves :: Sing b -> M.Map (N, N) (Move b)
+validMoves
+    :: Sing b
+    -> M.Map (N, N) (Move b)
 validMoves b = M.fromList do
     (FromSing i, row) <- zip (iterate S Z) (FromSing b)
     (FromSing j, _  ) <- zip (iterate S Z) row
