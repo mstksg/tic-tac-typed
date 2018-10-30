@@ -1,10 +1,12 @@
 {-# LANGUAGE AllowAmbiguousTypes  #-}
 {-# LANGUAGE BlockArguments       #-}
 {-# LANGUAGE EmptyCase            #-}
+{-# LANGUAGE FlexibleInstances    #-}
 {-# LANGUAGE GADTs                #-}
 {-# LANGUAGE KindSignatures       #-}
 {-# LANGUAGE LambdaCase           #-}
 {-# LANGUAGE PatternSynonyms      #-}
+{-# LANGUAGE RankNTypes           #-}
 {-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE TypeInType           #-}
@@ -12,17 +14,19 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Type.Sel (
-    Sel(..)
-  , listSel
-  , OutOfBounds
+    Sel(..), SelPred
+  , InBounds, OutOfBounds
   ) where
 
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
-import           Data.Singletons.Prelude hiding (Any)
+import           Data.Singletons.Prelude hiding (Any, Not)
 import           Data.Singletons.Sigma
 import           Data.Type.Lens
+import           Data.Type.Predicate
+import           Data.Type.Predicate.Param
+import           Data.Type.Universe
 
 -- TODO: implement Sel in terms of Index?
 
@@ -32,23 +36,28 @@ data Sel :: N -> [k] -> k -> Type where
     SelZ :: Sel 'Z (a ': as) a
     SelS :: Sel n as a -> Sel ('S n) (b ': as) a
 
-type OutOfBounds n (as :: [k]) = Refuted (Σ k (TyCon (Sel n as)))
+data SelPred :: N -> ParamPred [k] k
+type instance Apply (SelPred n as) a = Sel n as a
 
-listSel
-    :: forall k n (as :: [k]). ()
-    => Sing n
-    -> Sing as
-    -> Decision (Σ k (TyCon (Sel n as)))
-listSel = \case
-    SZ -> \case
-      SNil -> Disproved \case
-        _ :&: s -> case s of {}
-      s `SCons` _ -> Proved $ s :&: SelZ
-    SS n -> \case
-      SNil -> Disproved \case
-        _ :&: s -> case s of {}
-      _ `SCons` xs -> case listSel n xs of
-        Proved (y :&: s) -> Proved (y :&: SelS s)
-        Disproved v -> Disproved \case
-          y :&: s -> case s of
-            SelS m -> v (y :&: m)
+type InBounds n    = Found (SelPred n)
+type OutOfBounds n = Not (InBounds n)
+-- type OutOfBounds n (as :: [k]) = Refuted (Σ k (TyCon (Sel n as)))
+-- type OutOfBounds n = Not (Found (TyCon1(as :: [k]) = Refuted (Σ k (TyCon (Sel n as)))
+
+instance SingI n => Decidable (InBounds n) where
+    decide = go sing
+      where
+        go :: Sing m -> Decide (InBounds m)
+        go = \case
+          SZ   -> \case
+            SNil -> Disproved \case
+              _ :&: s -> case s of {}
+            x `SCons` _  -> Proved $ x :&: SelZ
+          SS n -> \case
+            SNil -> Disproved \case
+              _ :&: s -> case s of {}
+            _ `SCons` xs -> case go n xs of
+              Proved (y :&: s) -> Proved $ y :&: SelS s
+              Disproved v      -> Disproved \case
+                y :&: s -> case s of
+                  SelS m -> v (y :&: m)

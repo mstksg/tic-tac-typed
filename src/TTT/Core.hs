@@ -191,19 +191,20 @@ data Update :: (N, N) -> Piece -> Board -> Board -> Type where
 -- | Potential results of 'pick': A verified move, or one of many failures
 -- (with proof of failures)
 data Pick :: N -> N -> Board -> Type where
-    PickValid  :: Sel i b row     -> Sel j row 'Nothing  -> Pick i j b
-    PickPlayed :: Sel i b row     -> Sel j row ('Just p) -> Sing p -> Pick i j b
-    PickOoBX   :: OutOfBounds i b ->                        Pick i j b
-    PickOoBY   :: Sel i b row     -> OutOfBounds j row   -> Pick i j b
+    PickValid  :: Sel i b row        -> Sel j row 'Nothing   -> Pick i j b
+    PickPlayed :: Sel i b row        -> Sel j row ('Just p)  -> Sing p -> Pick i j b
+    PickOoBX   :: OutOfBounds i @@ b ->                         Pick i j b
+    PickOoBY   :: Sel i b row        -> OutOfBounds j @@ row -> Pick i j b
 
 -- | Validate a pick from given coordinates on a board
 pick
-    :: Sing i
+    :: forall i j b. ()
+    => Sing i
     -> Sing j
     -> Sing b
     -> Pick i j b
-pick i j b = case listSel i b of
-    Proved (row :&: i') -> case listSel j row of
+pick Sing Sing b = case search @(SelPred i) b of
+    Proved (row :&: i') -> case search @(SelPred j) row of
       Proved (p :&: j') -> case p of
         SJust q  -> PickPlayed i' j' q
         SNothing -> PickValid i' j'

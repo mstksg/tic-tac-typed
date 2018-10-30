@@ -35,6 +35,7 @@ resolver: nightly-2018-10-04
 #  - wai
 packages:
 - .
+# - '/home/justin/projects/haskell/lens-typelevel'
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # using the same syntax as the packages field.
