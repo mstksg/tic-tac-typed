@@ -113,27 +113,23 @@ $(singletonsOnly [d|
 --  Predicates
 -- ********************************
 
--- | Witness that a piece has won a row
-data VicWit :: [Maybe Piece] -> Piece -> Type where
-    VicWit :: All [] (EqualTo ('Just p)) @@ as
-            -> VicWit ('Just p ': as) p
+-- | Parameterized predicate witness that a piece has won a row
+data Victory :: [Maybe Piece] -> Piece -> Type where
+    Victory :: All [] (EqualTo ('Just p)) @@ as
+            -> Victory ('Just p ': as) p
 
--- | Parameterized Predicate that a given line has a given victor
-data Victory :: ParamPred [Maybe Piece] Piece
-type instance Apply (Victory as) p = VicWit as p
-
-instance Decidable (Found Victory) where
+instance Decidable (Found (TyPP Victory)) where
     decide = \case
       SNil -> Disproved \case
         _ :&: v -> case v of {}
       SNothing `SCons` _ -> Disproved \case
         _ :&: v -> case v of {}
       SJust (x@Sing :: Sing p) `SCons` xs -> case decide @(All [] (EqualTo ('Just p))) xs of
-        Proved p    -> Proved $ x :&: VicWit p
+        Proved p    -> Proved $ x :&: Victory p
         Disproved r -> Disproved \case
-          _ :&: VicWit a -> r a
+          _ :&: Victory a -> r a
 
-instance Auto (Not (Found Victory)) ('Nothing ': as) where
+instance Auto (Not (Found (TyPP Victory))) ('Nothing ': as) where
     auto (_ :&: w) = case w of {}
 
 -- | Predicate that a board is won by a given player
@@ -141,7 +137,7 @@ instance Auto (Not (Found Victory)) ('Nothing ': as) where
 -- @
 -- Winner :: ParamPred Board Piece
 -- @
-type Winner = LinesSym0 `PPMap` AnyMatch [] Victory
+type Winner = LinesSym0 `PPMap` AnyMatch [] (TyPP Victory)
 
 -- | Predicate that all spots have been played (cats game).
 --
@@ -158,20 +154,20 @@ type Cats = All [] (All [] IsJust)
 --
 -- Generate using 'Taken' for 'Found BoardResultFOr'.
 data GameOver :: Board -> Result -> Type where
-    GMVictory :: Winner b @@ p
+    GOVictory :: Winner b @@ p
               -> GameOver b ('ResWin p)
-    GMCats    :: Not (Found Winner) @@ b
+    GOCats    :: Not (Found Winner) @@ b
               -> Cats @@ b
               -> GameOver b 'ResCats
 
 instance Decidable (Found (TyPP GameOver)) where
     decide b = case search @Winner b of
-      Proved (p :&: v) -> Proved $ SResWin p :&: GMVictory v
+      Proved (p :&: v) -> Proved $ SResWin p :&: GOVictory v
       Disproved r      -> case decide @Cats b of
-        Proved c     -> Proved $ SResCats :&: GMCats r c
+        Proved c     -> Proved $ SResCats :&: GOCats r c
         Disproved r' -> Disproved \case
-          SResWin p :&: GMVictory v -> r $ p :&: v
-          SResCats  :&: GMCats _ c  -> r' c
+          SResWin p :&: GOVictory v -> r $ p :&: v
+          SResCats  :&: GOCats _ c  -> r' c
 
 -- | A predicate that a game is still in play
 type InPlay = Not (Found (TyPP GameOver))
@@ -223,8 +219,8 @@ data GameState :: Piece -> Board -> Type where
 -- | The empty board is in-play.
 startInPlay :: InPlay @@ EmptyBoard
 startInPlay = \case
-    SResWin p :&: GMVictory v -> noVictor (p :&: v)
-    SResCats  :&: GMCats _ c  -> noCats   c
+    SResWin p :&: GOVictory v -> noVictor (p :&: v)
+    SResCats  :&: GOCats _ c  -> noCats   c
   where
     noVictor :: Not (Found Winner) @@ EmptyBoard
     noVictor = autoNot @_ @(Found Winner)  @EmptyBoard
