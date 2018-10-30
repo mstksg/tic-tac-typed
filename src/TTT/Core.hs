@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments        #-}
 {-# LANGUAGE EmptyCase             #-}
+{-# LANGUAGE FlexibleContexts      #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE GADTs                 #-}
 {-# LANGUAGE InstanceSigs          #-}
@@ -37,7 +38,8 @@ module TTT.Core (
   , Update(..), Coord(..), InPlay, startInPlay
   , play
   -- ** Verify
-  , Pick(..), pick
+  , Pick(..)
+  -- , pick
   -- * Defunctionalization Symbols
   , ResWinSym0, ResWinSym1, ResCatsSym0
   , BoardSym0
@@ -190,26 +192,22 @@ data Update :: (N, N) -> Piece -> Board -> Board -> Type where
 
 -- | Potential results of 'pick': A verified move, or one of many failures
 -- (with proof of failures)
-data Pick :: N -> N -> Board -> Type where
-    PickValid  :: Sel i b row        -> Sel j row 'Nothing   -> Pick i j b
-    PickPlayed :: Sel i b row        -> Sel j row ('Just p)  -> Sing p -> Pick i j b
-    PickOoBX   :: OutOfBounds i @@ b ->                         Pick i j b
-    PickOoBY   :: Sel i b row        -> OutOfBounds j @@ row -> Pick i j b
+data Pick :: (N, N, Board) -> Type where
+    PickValid  :: Sel i b row        -> Sel j row 'Nothing   -> Pick '(i, j, b)
+    PickPlayed :: Sel i b row        -> Sel j row ('Just p)
+               -> Sing p                                     -> Pick '(i, j, b)
+    PickOoBX   :: OutOfBounds i @@ b                         -> Pick '(i, j, b)
+    PickOoBY   :: Sel i b row        -> OutOfBounds j @@ row -> Pick '(i, j, b)
 
--- | Validate a pick from given coordinates on a board
-pick
-    :: forall i j b. ()
-    => Sing i
-    -> Sing j
-    -> Sing b
-    -> Pick i j b
-pick Sing Sing b = case search @(SelPred i) b of
-    Proved (row :&: i') -> case search @(SelPred j) row of
-      Proved (p :&: j') -> case p of
-        SJust q  -> PickPlayed i' j' q
-        SNothing -> PickValid i' j'
-      Disproved v -> PickOoBY i' v
-    Disproved v -> PickOoBX v
+instance Provable (TyPred Pick) where
+    prove (STuple3 (Sing :: Sing i) (Sing :: Sing j) b) =
+      case searchTC b of
+        Proved (row :&: i) -> case searchTC row of
+          Proved (p :&: j) -> case p of
+            SNothing -> PickValid i j
+            SJust c  -> PickPlayed i j c
+          Disproved v -> PickOoBY i v
+        Disproved v -> PickOoBX v
 
 -- | Current board and currently expected player.
 --

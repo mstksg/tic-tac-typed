@@ -5,6 +5,7 @@
 {-# LANGUAGE PolyKinds        #-}
 {-# LANGUAGE RankNTypes       #-}
 {-# LANGUAGE RecordWildCards  #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies     #-}
 {-# LANGUAGE TypeOperators    #-}
 
@@ -24,6 +25,7 @@ import           Data.Singletons
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Lens
+import           Data.Type.Predicate
 import           TTT.Core
 import qualified Data.Map                        as M
 import qualified Data.Vector                     as V
@@ -44,7 +46,7 @@ validMoves :: Sing b -> M.Map (N, N) (Move b)
 validMoves b = M.fromList do
     (FromSing i, row) <- zip (iterate S Z) (FromSing b)
     (FromSing j, _  ) <- zip (iterate S Z) row
-    PickValid i' j'   <- pure $ pick i j b
+    PickValid i' j'   <- pure $ proveTC (STuple3 i j b)
     pure ( (FromSing i, FromSing j)
          , STuple2 i j :&: Coord i' j'
          )
@@ -65,7 +67,7 @@ priorityController
 priorityController xs CC{..} = pure $ asum (map (uncurry (go _ccBoard)) xs)
   where
     go :: Sing b -> N -> N -> Maybe (Move b)
-    go b' (FromSing i) (FromSing j) = case pick i j b' of
+    go b' (FromSing i) (FromSing j) = case proveTC (STuple3 i j b') of
       PickValid i' j' -> Just $ STuple2 i j :&: Coord i' j'
       _               -> Nothing
 

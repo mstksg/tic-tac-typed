@@ -23,10 +23,11 @@ ghc-options:
 - -Wall
 # - -Wredundant-constraints
 - -fno-max-relevant-binds
+- -Werror=incomplete-patterns
 
 dependencies:
 - base >= 4.7 && < 5
-- decidable >= 0.1.2
+- decidable >= 0.1.4
 - mtl
 - mwc-random
 - primitive

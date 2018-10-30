@@ -14,8 +14,11 @@
 {-# LANGUAGE UndecidableInstances #-}
 
 module Data.Type.Sel (
-    Sel(..), SelPred
+    Sel(..)
   , InBounds, OutOfBounds
+  , TyPP
+  -- , ixSel
+  -- , sameSel
   ) where
 
 import           Data.Kind
@@ -26,7 +29,6 @@ import           Data.Singletons.Sigma
 import           Data.Type.Lens
 import           Data.Type.Predicate
 import           Data.Type.Predicate.Param
-import           Data.Type.Universe
 
 -- TODO: implement Sel in terms of Index?
 
@@ -36,13 +38,9 @@ data Sel :: N -> [k] -> k -> Type where
     SelZ :: Sel 'Z (a ': as) a
     SelS :: Sel n as a -> Sel ('S n) (b ': as) a
 
-data SelPred :: N -> ParamPred [k] k
-type instance Apply (SelPred n as) a = Sel n as a
-
-type InBounds n    = Found (SelPred n)
+type InBounds n    = Found (TyPP (Sel n))
 type OutOfBounds n = Not (InBounds n)
--- type OutOfBounds n (as :: [k]) = Refuted (Σ k (TyCon (Sel n as)))
--- type OutOfBounds n = Not (Found (TyCon1(as :: [k]) = Refuted (Σ k (TyCon (Sel n as)))
+
 
 instance SingI n => Decidable (InBounds n) where
     decide = go sing
@@ -61,3 +59,21 @@ instance SingI n => Decidable (InBounds n) where
               Disproved v      -> Disproved \case
                 y :&: s -> case s of
                   SelS m -> v (y :&: m)
+
+-- ixSel :: Sing as -> Sel n as a -> Sing a
+-- ixSel = \case
+--     SNil         -> \case {}
+--     x `SCons` xs -> \case
+--       SelZ   -> x
+--       SelS s -> ixSel xs s
+
+-- sameSel
+--     :: Sel n as a
+--     -> Sel n as b
+--     -> a :~: b
+-- sameSel = \case
+--     SelZ   -> \case
+--       SelZ   -> Refl
+--     SelS s -> \case
+--       SelS t -> case sameSel s t of
+--         Refl -> Refl

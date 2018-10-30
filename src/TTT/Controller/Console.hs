@@ -1,4 +1,5 @@
 {-# LANGUAGE BlockArguments   #-}
+{-# LANGUAGE GADTs            #-}
 {-# LANGUAGE PolyKinds        #-}
 {-# LANGUAGE RankNTypes       #-}
 {-# LANGUAGE RecordWildCards  #-}
@@ -19,6 +20,7 @@ import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
 import           Data.Type.Lens
+import           Data.Type.Predicate
 import           TTT.Controller
 import           TTT.Core
 import qualified Data.Map                  as M
@@ -44,7 +46,7 @@ consoleController CC{..} = liftIO . repeatUntil $ do
         Nothing -> case map toLower l of
           'q':_ -> pure $ Just Nothing
           _     -> Nothing <$ putStrLn "No parse. Try again. (q or Ctrl+D to quit)"
-        Just (FromSing i, FromSing j) -> case pick i j _ccBoard of
+        Just (FromSing i, FromSing j) -> case proveTC (STuple3 i j _ccBoard) of
           PickValid i' j' -> pure . Just . Just $ STuple2 i j :&: Coord i' j'
           PickPlayed{}    -> Nothing <$ putStrLn "Spot is already played. Try again."
           PickOoBX{}      -> Nothing <$ putStrLn "Out of bounds. Try again."
