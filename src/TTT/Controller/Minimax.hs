@@ -87,7 +87,7 @@ minimax b r p g n = do
   where
     go :: Move b -> m (Option (Max (Arg (RankRes p) (Move b))))
     go m@(STuple2 i j :&: Coord i' j') = do
-      res <- case search @GameOver b' of
+      res <- case searchTC b' of
         Proved (s :&: _) -> pure @m. pure @Option $ Just (FromSing s)
         Disproved v      -> case n of
           Z    -> pure @m . pure @Option $ Nothing
@@ -138,7 +138,7 @@ data SomeBranch :: N -> Board -> Piece -> (N, N) -> Type where
 data MMTree :: N -> Board -> Piece -> Type where
     MMCutoff   :: InPlay @@ b
                -> MMTree 'Z b p
-    MMGameOver :: BoardResult b s
+    MMGameOver :: GameOver b s
                -> Sing s
                -> MMTree n b p
     MMBranch   :: InPlay @@ b
@@ -161,7 +161,7 @@ buildMMTree b gm p g = \case
         -> Move b
         -> DM.DSum Sing (SomeBranch n' b p)
     go n' (STuple2 i j :&: c@(Coord i' j')) = (STuple2 i j DM.:=>) . flip SB c $
-        case search @GameOver b' of
+        case searchTC @GameOver b' of
           Proved (s :&: m) -> MMGameOver m s
           Disproved m      -> buildMMTree b' m (sAltP p) g' n'
       where
@@ -172,7 +172,7 @@ pickMMTree
     :: forall n b p m. (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
     => Sing p
     -> MMTree n b p
-    -> m (Option (ArgMax (RankRes p) (Move b)), Decision (Found GameOver @@ b))
+    -> m (Option (ArgMax (RankRes p) (Move b)), Decision (Found (TyPP GameOver) @@ b))
 pickMMTree p = \case
     MMCutoff   m   -> pure (Option Nothing, Disproved m     )
     MMGameOver m s -> pure (Option Nothing, Proved $ s :&: m)

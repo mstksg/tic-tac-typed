@@ -96,6 +96,6 @@ runController p c (b :&: (g, r)) = do
       Just (STuple2 i j :&: Coord i' j') -> do
         let b' = sPlaceBoard i j p b
             g' = play r i' j' p g
-        case search @GameOver b' of
+        case searchTC b' of
           Proved (s :&: _) -> throwE (FromSing b', EGameOver (FromSing s))
           Disproved m      -> pure $ b' :&: (g', m)

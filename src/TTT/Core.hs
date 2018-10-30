@@ -32,7 +32,7 @@ module TTT.Core (
   -- ** Predicates on data types
   , Found
   , Winner, Cats
-  , BoardResult(..), GameOver
+  , GameOver(..)
   -- * Represent game state and updates
   , GameState(..)
   , Update(..), Coord(..), InPlay, startInPlay
@@ -116,30 +116,30 @@ $(singletonsOnly [d|
 -- ********************************
 
 -- | Witness that a piece has won a row
-data Victory :: [Maybe Piece] -> Piece -> Type where
-    Victory :: All [] (EqualTo ('Just p)) @@ as
-            -> Victory ('Just p ': as) p
+data VicWit :: [Maybe Piece] -> Piece -> Type where
+    VicWit :: All [] (EqualTo ('Just p)) @@ as
+            -> VicWit ('Just p ': as) p
 
 -- | Parameterized Predicate that a given line has a given victor
-data LineWon :: ParamPred [Maybe Piece] Piece
-type instance Apply (LineWon as) p = Victory as p
+data Victory :: ParamPred [Maybe Piece] Piece
+type instance Apply (Victory as) p = VicWit as p
 
-instance Decidable (Found LineWon) where
+instance Decidable (Found Victory) where
     decide = \case
       SNil -> Disproved \case
         _ :&: v -> case v of {}
       SNothing `SCons` _ -> Disproved \case
         _ :&: v -> case v of {}
       SJust (x@Sing :: Sing p) `SCons` xs -> case decide @(All [] (EqualTo ('Just p))) xs of
-        Proved p    -> Proved $ x :&: Victory p
+        Proved p    -> Proved $ x :&: VicWit p
         Disproved r -> Disproved \case
-          _ :&: Victory a -> r a
+          _ :&: VicWit a -> r a
 
-instance Auto (Not (Found LineWon)) ('Nothing ': as) where
+instance Auto (Not (Found Victory)) ('Nothing ': as) where
     auto (_ :&: w) = case w of {}
 
 -- | Predicate that a board is won by a given player
-type Winner = (PPMap LinesSym0 (AnyMatch [] LineWon) :: ParamPred Board Piece)
+type Winner = (PPMap LinesSym0 (AnyMatch [] Victory) :: ParamPred Board Piece)
 
 -- | Predicate that all spots have been played (cats game).
 --
@@ -155,17 +155,14 @@ type Cats = (All ([] :.: []) (NotNull Maybe) :: Predicate CompBoard)
 -- | Witness that a game is in a specific mode.
 --
 -- Generate using 'Taken' for 'Found BoardResultFOr'.
-data BoardResult :: Board -> Result -> Type where
+data GameOver :: Board -> Result -> Type where
     GMVictory :: Winner b @@ p
-              -> BoardResult b ('ResWin p)
+              -> GameOver b ('ResWin p)
     GMCats    :: Not (Found Winner) @@ b
               -> Cats @@ 'Comp b
-              -> BoardResult b 'ResCats
+              -> GameOver b 'ResCats
 
-data GameOver :: ParamPred Board Result
-type instance Apply (GameOver b) o = BoardResult b o
-
-instance Decidable (Found GameOver) where
+instance Decidable (Found (TyPP GameOver)) where
     decide b = case search @Winner b of
         Proved (p :&: v) -> Proved $ SResWin p :&: GMVictory v
         Disproved r      -> case decide @Cats (SComp b) of
@@ -174,7 +171,8 @@ instance Decidable (Found GameOver) where
             SResWin p :&: GMVictory v -> r $ p :&: v
             SResCats  :&: GMCats _ c  -> r' c
 
-type InPlay = Not (Found GameOver)
+-- | A predicate that a game is still in play
+type InPlay = Not (Found (TyPP GameOver))
 
 -- | Represents a board and coordinate with the current item at position on
 -- the board.
