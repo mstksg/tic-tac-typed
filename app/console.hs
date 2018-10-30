@@ -19,7 +19,7 @@ import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
-import           Data.Type.Nat
+import           Data.Type.Lens
 import           Data.Type.Predicate
 import           Data.Type.Predicate.Logic
 import           Data.Type.Predicate.Param

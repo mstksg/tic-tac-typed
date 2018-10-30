@@ -18,7 +18,7 @@ import           Data.Maybe
 import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
-import           Data.Type.Nat
+import           Data.Type.Lens
 import           TTT.Controller
 import           TTT.Core
 import qualified Data.Map                  as M

@@ -20,9 +20,9 @@ module Data.Type.Sel (
 import           Data.Kind
 import           Data.Singletons
 import           Data.Singletons.Decide
-import           Data.Singletons.Prelude hiding     (Any)
+import           Data.Singletons.Prelude hiding (Any)
 import           Data.Singletons.Sigma
-import           Data.Type.Nat
+import           Data.Type.Lens
 
 -- TODO: implement Sel in terms of Index?
 

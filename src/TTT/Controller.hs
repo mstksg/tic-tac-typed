@@ -23,7 +23,7 @@ import           Data.Foldable
 import           Data.Singletons
 import           Data.Singletons.Sigma
 import           Data.Singletons.TH
-import           Data.Type.Nat
+import           Data.Type.Lens
 import           TTT.Core
 import qualified Data.Map                        as M
 import qualified Data.Vector                     as V
