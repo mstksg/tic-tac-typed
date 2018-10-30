@@ -137,7 +137,11 @@ instance Auto (Not (Found Victory)) ('Nothing ': as) where
     auto (_ :&: w) = case w of {}
 
 -- | Predicate that a board is won by a given player
-type Winner = (PPMap LinesSym0 (AnyMatch [] Victory) :: ParamPred Board Piece)
+--
+-- @
+-- Winner :: ParamPred Board Piece
+-- @
+type Winner = LinesSym0 `PPMap` AnyMatch [] Victory
 
 -- | Predicate that all spots have been played (cats game).
 --
