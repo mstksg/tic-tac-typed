@@ -43,7 +43,6 @@ module TTT.Core (
   -- * Defunctionalization Symbols
   , ResWinSym0, ResWinSym1, ResCatsSym0
   , BoardSym0
-  , CompBoardSym0
   , AltPSym0, AltPSym1
   , LinesSym0, LinesSym1
   , EmptyBoardSym0
@@ -96,7 +95,6 @@ $(singletons [d|
 
   -- Representation of a board
   type Board = [[Maybe Piece]]
-  type CompBoard = ([] :.: []) (Maybe Piece)
 
   -- The empty (starting) board
   emptyBoard :: Board
@@ -146,7 +144,7 @@ type Winner = (PPMap LinesSym0 (AnyMatch [] Victory) :: ParamPred Board Piece)
 -- @
 -- 'Cats' :: 'Predicate' 'Board'
 -- @
-type Cats = (All ([] :.: []) (NotNull Maybe) :: Predicate CompBoard)
+type Cats = All [] (All [] IsJust)
 
 -- ********************************
 --  Witnesses
@@ -159,17 +157,17 @@ data GameOver :: Board -> Result -> Type where
     GMVictory :: Winner b @@ p
               -> GameOver b ('ResWin p)
     GMCats    :: Not (Found Winner) @@ b
-              -> Cats @@ 'Comp b
+              -> Cats @@ b
               -> GameOver b 'ResCats
 
 instance Decidable (Found (TyPP GameOver)) where
     decide b = case search @Winner b of
-        Proved (p :&: v) -> Proved $ SResWin p :&: GMVictory v
-        Disproved r      -> case decide @Cats (SComp b) of
-          Proved c     -> Proved $ SResCats :&: GMCats r c
-          Disproved r' -> Disproved \case
-            SResWin p :&: GMVictory v -> r $ p :&: v
-            SResCats  :&: GMCats _ c  -> r' c
+      Proved (p :&: v) -> Proved $ SResWin p :&: GMVictory v
+      Disproved r      -> case decide @Cats b of
+        Proved c     -> Proved $ SResCats :&: GMCats r c
+        Disproved r' -> Disproved \case
+          SResWin p :&: GMVictory v -> r $ p :&: v
+          SResCats  :&: GMCats _ c  -> r' c
 
 -- | A predicate that a game is still in play
 type InPlay = Not (Found (TyPP GameOver))
@@ -226,8 +224,9 @@ startInPlay = \case
   where
     noVictor :: Not (Found Winner) @@ EmptyBoard
     noVictor = autoNot @_ @(Found Winner)  @EmptyBoard
-    noCats   :: Not Cats @@ 'Comp EmptyBoard
-    noCats   = autoNotAll @(NotNull Maybe) $ IZ :? IZ
+    noCats   :: Not Cats @@ EmptyBoard
+    noCats   = mapRefuted allComp
+                $ autoNotAll @IsJust $ IZ :? IZ
 
 -- | Type-safe "play".
 play
