@@ -7,43 +7,6 @@
 @package tic-tac-typed
 @version 0.1.0.0
 
-module Data.Type.Nat
-
--- | Peano nats, used for implementation of list index traversals in a
---   termination-sane way.
-data N
-Z :: N
-S :: N -> N
-type SN = (Sing :: N -> Type)
-
--- | The singleton kind-indexed data family.
-data family Sing (a :: k) :: Type
-addN :: N -> N -> N
-type family AddN (a_anqq :: N) (a_anqr :: N) :: N
-sAddN :: forall (t_aoIo :: N) (t_aoIp :: N). Sing t_aoIo -> Sing t_aoIp -> Sing (Apply (Apply AddNSym0 t_aoIo) t_aoIp :: N)
-data LT :: N -> N -> Type
-[LTZ] :: LT  'Z n
-[LTS] :: LT n m -> LT ( 'S n) ( 'S m)
-type ZSym0 = Z
-data SSym0 (a :: TyFun N N)
-type SSym1 (t6989586621679198455 :: N) = S t6989586621679198455
-data AddNSym0 :: (~>) N ((~>) N N)
-data AddNSym1 (a6989586621679099842 :: N) :: (~>) N N
-type AddNSym2 (a6989586621679099842 :: N) (a6989586621679099843 :: N) = AddN a6989586621679099842 a6989586621679099843
-instance GHC.Classes.Eq Data.Type.Lens.N
-instance GHC.Classes.Ord Data.Type.Lens.N
-instance Data.Singletons.Prelude.Eq.PEq Data.Type.Lens.N
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings Data.Type.Nat.Compare_6989586621679104790Sym0
-instance Data.Singletons.Prelude.Ord.POrd Data.Type.Lens.N
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Nat.Compare_6989586621679104790Sym1 a6989586621679104788)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (Data.Type.Nat.AddNSym1 a6989586621679099842)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings Data.Type.Nat.AddNSym0
-instance Data.Singletons.Internal.SingI Data.Type.Nat.AddNSym0
-instance Data.Singletons.Internal.SingI d => Data.Singletons.Internal.SingI (Data.Type.Nat.AddNSym1 d)
-instance Data.Singletons.Prelude.Ord.SOrd Data.Type.Lens.N
-instance Data.Singletons.Prelude.Eq.SEq Data.Type.Lens.N
-instance Data.Singletons.Decide.SDecide Data.Type.Lens.N
-
 module Data.Type.Sel
 
 -- | A <tt><a>Sel</a> n as a</tt> is an index into a list <tt>as</tt> that
@@ -68,16 +31,16 @@ type Board = [[Maybe Piece]]
 -- | The singleton kind-indexed data family.
 data family Sing (a :: k) :: Type
 altP :: Piece -> Piece
-type family AltP (a_aT3d :: Piece) :: Piece
-sAltP :: forall (t_aTge :: Piece). Sing t_aTge -> Sing (Apply AltPSym0 t_aTge :: Piece)
-lines :: [[a_aSec]] -> [[a_aSec]]
-type family Lines (a_aT3a :: [[a_aSec]]) :: [[a_aSec]]
-sLines :: forall a_aSec (t_aTgc :: [[a_aSec]]). Sing t_aTgc -> Sing (Apply LinesSym0 t_aTgc :: [[a_aSec]])
+type family AltP (a_aHOZ :: Piece) :: Piece
+sAltP :: forall (t_aI1R :: Piece). Sing t_aI1R -> Sing (Apply AltPSym0 t_aI1R :: Piece)
+lines :: [[a_aGA7]] -> [[a_aGA7]]
+type family Lines (a_aHOW :: [[a_aGA7]]) :: [[a_aGA7]]
+sLines :: forall a_aGA7 (t_aI1P :: [[a_aGA7]]). Sing t_aI1P -> Sing (Apply LinesSym0 t_aI1P :: [[a_aGA7]])
 emptyBoard :: Board
 type family EmptyBoard :: [[Maybe Piece]]
 sEmptyBoard :: Sing (EmptyBoardSym0 :: [[Maybe Piece]])
-type family PlaceBoard a_aUtW a_aUtX a_aUtY a_aUtZ
-sPlaceBoard :: forall arg_aUu8 arg_aUu9 arg_aUua arg_aUub. Sing arg_aUu8 -> Sing arg_aUu9 -> Sing arg_aUua -> Sing arg_aUub -> Sing (Apply (Apply (Apply (Apply PlaceBoardSym0 arg_aUu8) arg_aUu9) arg_aUua) arg_aUub)
+type family PlaceBoard a_aNLH a_aNLI a_aNLJ a_aNLK
+sPlaceBoard :: forall arg_aNLT arg_aNLU arg_aNLV arg_aNLW. Sing arg_aNLT -> Sing arg_aNLU -> Sing arg_aNLV -> Sing arg_aNLW -> Sing (Apply (Apply (Apply (Apply PlaceBoardSym0 arg_aNLT) arg_aNLU) arg_aNLV) arg_aNLW)
 
 -- | Convert a parameterized predicate into a predicate on the parameter.
 --   
@@ -156,30 +119,30 @@ data Pick :: N -> N -> Board -> Type
 -- | Validate a pick from given coordinates on a board
 pick :: Sing i -> Sing j -> Sing b -> Pick i j b
 data ResWinSym0 :: (~>) Piece Result
-type ResWinSym1 (t6989586621679221402 :: Piece) = ResWin t6989586621679221402
+type ResWinSym1 (t6989586621679178236 :: Piece) = ResWin t6989586621679178236
 type ResCatsSym0 = ResCats
 type BoardSym0 = Board
 type CompBoardSym0 = CompBoard
 data AltPSym0 :: (~>) Piece Piece
-type AltPSym1 (a6989586621679221411 :: Piece) = AltP a6989586621679221411
-data LinesSym0 :: forall a6989586621679218248. (~>) [[a6989586621679218248]] [[a6989586621679218248]]
-type LinesSym1 (a6989586621679221408 :: [[a6989586621679218248]]) = Lines a6989586621679221408
+type AltPSym1 (a6989586621679178245 :: Piece) = AltP a6989586621679178245
+data LinesSym0 :: forall a6989586621679173479. (~>) [[a6989586621679173479]] [[a6989586621679173479]]
+type LinesSym1 (a6989586621679178242 :: [[a6989586621679173479]]) = Lines a6989586621679178242
 type EmptyBoardSym0 = EmptyBoard
-data PlaceBoardSym0 a6989586621679226912
-data PlaceBoardSym1 a6989586621679226912 a6989586621679226913
-data PlaceBoardSym2 a6989586621679226912 a6989586621679226913 a6989586621679226914
-data PlaceBoardSym3 a6989586621679226912 a6989586621679226913 a6989586621679226914 a6989586621679226915
-type PlaceBoardSym4 a6989586621679226912 a6989586621679226913 a6989586621679226914 a6989586621679226915 = PlaceBoard a6989586621679226912 a6989586621679226913 a6989586621679226914 a6989586621679226915
+data PlaceBoardSym0 a6989586621679201105
+data PlaceBoardSym1 a6989586621679201105 a6989586621679201106
+data PlaceBoardSym2 a6989586621679201105 a6989586621679201106 a6989586621679201107
+data PlaceBoardSym3 a6989586621679201105 a6989586621679201106 a6989586621679201107 a6989586621679201108
+type PlaceBoardSym4 a6989586621679201105 a6989586621679201106 a6989586621679201107 a6989586621679201108 = PlaceBoard a6989586621679201105 a6989586621679201106 a6989586621679201107 a6989586621679201108
 instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.GameOver)
 instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.LineWon)
 instance Data.Type.Predicate.Auto.Auto (Data.Type.Predicate.Not (Data.Type.Predicate.Param.Found TTT.Core.LineWon)) ('GHC.Maybe.Nothing : as)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.PlaceBoardSym0
 instance Data.Singletons.Internal.SingI TTT.Core.PlaceBoardSym0
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym1 a6989586621679226912)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym1 a6989586621679201105)
 instance Data.Singletons.Internal.SingI d => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym1 d)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym2 a6989586621679226913 a6989586621679226912)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym2 a6989586621679201106 a6989586621679201105)
 instance (Data.Singletons.Internal.SingI d1, Data.Singletons.Internal.SingI d2) => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym2 d1 d2)
-instance forall k1 (a6989586621679226914 :: Data.Type.Lens.N) (a6989586621679226913 :: Data.Type.Lens.N) (a6989586621679226912 :: k1). Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym3 a6989586621679226914 a6989586621679226913 a6989586621679226912)
+instance forall k1 (a6989586621679201107 :: Data.Type.Lens.N) (a6989586621679201106 :: Data.Type.Lens.N) (a6989586621679201105 :: k1). Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym3 a6989586621679201107 a6989586621679201106 a6989586621679201105)
 instance forall k1 (d1 :: Data.Type.Lens.N) (d2 :: Data.Type.Lens.N) (d3 :: k1). (Data.Singletons.Internal.SingI d1, Data.Singletons.Internal.SingI d2, Data.Singletons.Internal.SingI d3) => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym3 d1 d2 d3)
 instance GHC.Classes.Eq TTT.Core.Result
 instance GHC.Show.Show TTT.Core.Result
@@ -189,14 +152,14 @@ instance GHC.Show.Show (Data.Singletons.Internal.Sing z)
 instance Data.Singletons.ShowSing.ShowSing TTT.Core.Piece => GHC.Show.Show (Data.Singletons.Internal.Sing z)
 instance Data.Singletons.Prelude.Eq.PEq TTT.Core.Result
 instance Data.Singletons.Prelude.Eq.PEq TTT.Core.Piece
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679222199Sym0
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679179024Sym0
 instance Data.Singletons.Prelude.Show.PShow TTT.Core.Result
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679222199Sym1 a6989586621679222196)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679222199Sym2 a6989586621679222197 a6989586621679222196)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679222177Sym0
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679179024Sym1 a6989586621679179021)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679179024Sym2 a6989586621679179022 a6989586621679179021)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.ShowsPrec_6989586621679179002Sym0
 instance Data.Singletons.Prelude.Show.PShow TTT.Core.Piece
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679222177Sym1 a6989586621679222174)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679222177Sym2 a6989586621679222175 a6989586621679222174)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679179002Sym1 a6989586621679178999)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.ShowsPrec_6989586621679179002Sym2 a6989586621679179000 a6989586621679178999)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.AltPSym0
 instance Data.Singletons.Internal.SingI TTT.Core.AltPSym0
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.LinesSym0
