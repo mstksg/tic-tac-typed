@@ -75,7 +75,7 @@ sPlaceBoard :: forall arg_aNiF arg_aNiG arg_aNiH arg_aNiI. Sing arg_aNiF -> Sing
 data Found (a :: ParamPred k v) (b :: TyFun k Type) :: forall v k. () => ParamPred k v -> TyFun k Type -> Type
 
 -- | Predicate that a board is won by a given player
-type Winner = (PPMap LinesSym0 (AnyMatch [] LineWon) :: ParamPred Board Piece)
+type Winner = (PPMap LinesSym0 (AnyMatch [] Victory) :: ParamPred Board Piece)
 
 -- | Predicate that all spots have been played (cats game).
 --   
@@ -87,10 +87,9 @@ type Cats = (All ([] :.: []) (NotNull Maybe) :: Predicate CompBoard)
 -- | Witness that a game is in a specific mode.
 --   
 --   Generate using <tt>Taken</tt> for 'Found BoardResultFOr'.
-data BoardResult :: Board -> Result -> Type
-[GMVictory] :: (Winner b @@ p) -> BoardResult b ( 'ResWin p)
-[GMCats] :: (Not (Found Winner) @@ b) -> (Cats @@  'Comp b) -> BoardResult b  'ResCats
-data GameOver :: ParamPred Board Result
+data GameOver :: Board -> Result -> Type
+[GMVictory] :: (Winner b @@ p) -> GameOver b ( 'ResWin p)
+[GMCats] :: (Not (Found Winner) @@ b) -> (Cats @@  'Comp b) -> GameOver b  'ResCats
 
 -- | Current board and currently expected player.
 --   
@@ -109,7 +108,9 @@ data Update :: (N, N) -> Piece -> Board -> Board -> Type
 --   the board.
 data Coord :: Board -> Maybe Piece -> (N, N) -> Type
 [Coord] :: Sel i b row -> Sel j row p -> Coord b p '(i, j)
-type InPlay = Not (Found GameOver)
+
+-- | A predicate that a game is still in play
+type InPlay = Not (Found (TyPP GameOver))
 
 -- | The empty board is in-play.
 startInPlay :: InPlay @@ EmptyBoard
@@ -140,9 +141,9 @@ data PlaceBoardSym2 a6989586621679199293 a6989586621679199294 a69895866216791992
 data PlaceBoardSym3 a6989586621679199293 a6989586621679199294 a6989586621679199295 a6989586621679199296
 type PlaceBoardSym4 a6989586621679199293 a6989586621679199294 a6989586621679199295 a6989586621679199296 = PlaceBoard a6989586621679199293 a6989586621679199294 a6989586621679199295 a6989586621679199296
 instance Data.Type.Predicate.Provable (Data.Type.Predicate.TyPred TTT.Core.Pick)
-instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.GameOver)
-instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.LineWon)
-instance Data.Type.Predicate.Auto.Auto (Data.Type.Predicate.Not (Data.Type.Predicate.Param.Found TTT.Core.LineWon)) ('GHC.Maybe.Nothing : as)
+instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found (Data.Type.Predicate.Param.TyPP TTT.Core.GameOver))
+instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.Victory)
+instance Data.Type.Predicate.Auto.Auto (Data.Type.Predicate.Not (Data.Type.Predicate.Param.Found TTT.Core.Victory)) ('GHC.Maybe.Nothing : as)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.PlaceBoardSym0
 instance Data.Singletons.Internal.SingI TTT.Core.PlaceBoardSym0
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym1 a6989586621679199293)
