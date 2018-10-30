@@ -75,7 +75,11 @@ sPlaceBoard :: forall arg_aNh0 arg_aNh1 arg_aNh2 arg_aNh3. Sing arg_aNh0 -> Sing
 data Found (a :: ParamPred k v) (b :: TyFun k Type) :: forall v k. () => ParamPred k v -> TyFun k Type -> Type
 
 -- | Predicate that a board is won by a given player
-type Winner = (PPMap LinesSym0 (AnyMatch [] Victory) :: ParamPred Board Piece)
+--   
+--   <pre>
+--   Winner :: ParamPred Board Piece
+--   </pre>
+type Winner = LinesSym0 `PPMap` AnyMatch [] Victory
 
 -- | Predicate that all spots have been played (cats game).
 --   
