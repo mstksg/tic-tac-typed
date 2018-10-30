@@ -79,7 +79,7 @@ data Found (a :: ParamPred k v) (b :: TyFun k Type) :: forall v k. () => ParamPr
 --   <pre>
 --   Winner :: ParamPred Board Piece
 --   </pre>
-type Winner = LinesSym0 `PPMap` AnyMatch [] Victory
+type Winner = LinesSym0 `PPMap` AnyMatch [] (TyPP Victory)
 
 -- | Predicate that all spots have been played (cats game).
 --   
@@ -92,8 +92,8 @@ type Cats = All [] (All [] IsJust)
 --   
 --   Generate using <tt>Taken</tt> for 'Found BoardResultFOr'.
 data GameOver :: Board -> Result -> Type
-[GMVictory] :: (Winner b @@ p) -> GameOver b ( 'ResWin p)
-[GMCats] :: (Not (Found Winner) @@ b) -> (Cats @@ b) -> GameOver b  'ResCats
+[GOVictory] :: (Winner b @@ p) -> GameOver b ( 'ResWin p)
+[GOCats] :: (Not (Found Winner) @@ b) -> (Cats @@ b) -> GameOver b  'ResCats
 
 -- | Current board and currently expected player.
 --   
@@ -145,8 +145,8 @@ data PlaceBoardSym3 a6989586621679199190 a6989586621679199191 a69895866216791991
 type PlaceBoardSym4 a6989586621679199190 a6989586621679199191 a6989586621679199192 a6989586621679199193 = PlaceBoard a6989586621679199190 a6989586621679199191 a6989586621679199192 a6989586621679199193
 instance Data.Type.Predicate.Provable (Data.Type.Predicate.TyPred TTT.Core.Pick)
 instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found (Data.Type.Predicate.Param.TyPP TTT.Core.GameOver))
-instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.Victory)
-instance Data.Type.Predicate.Auto.Auto (Data.Type.Predicate.Not (Data.Type.Predicate.Param.Found TTT.Core.Victory)) ('GHC.Maybe.Nothing : as)
+instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found (Data.Type.Predicate.Param.TyPP TTT.Core.Victory))
+instance Data.Type.Predicate.Auto.Auto (Data.Type.Predicate.Not (Data.Type.Predicate.Param.Found (Data.Type.Predicate.Param.TyPP TTT.Core.Victory))) ('GHC.Maybe.Nothing : as)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.PlaceBoardSym0
 instance Data.Singletons.Internal.SingI TTT.Core.PlaceBoardSym0
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym1 a6989586621679199190)
