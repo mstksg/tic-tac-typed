@@ -16,7 +16,6 @@
 module Data.Type.Sel (
     Sel(..)
   , InBounds, OutOfBounds
-  , TyPP
   , Coord(..)
   -- , ixSel
   -- , sameSel
@@ -62,25 +61,7 @@ instance SingI n => Decidable (InBounds n) where
                   SelS m -> v (y :&: m)
 
 -- | Represents a 2-d 'Sel'.
-data Coord :: [[k]] -> k -> (N, N) -> Type where
+data Coord :: (N, N) -> [[k]] -> k -> Type where
     Coord :: Sel i xss xs
           -> Sel j xs  x
-          -> Coord xss x '(i, j)
-
--- ixSel :: Sing as -> Sel n as a -> Sing a
--- ixSel = \case
---     SNil         -> \case {}
---     x `SCons` xs -> \case
---       SelZ   -> x
---       SelS s -> ixSel xs s
-
--- sameSel
---     :: Sel n as a
---     -> Sel n as b
---     -> a :~: b
--- sameSel = \case
---     SelZ   -> \case
---       SelZ   -> Refl
---     SelS s -> \case
---       SelS t -> case sameSel s t of
---         Refl -> Refl
+          -> Coord '(i, j) xss x

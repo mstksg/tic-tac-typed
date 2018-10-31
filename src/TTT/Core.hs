@@ -32,7 +32,7 @@ module TTT.Core (
   -- ** Predicates on data types
   , Found
   , Winner, Cats
-  , GameOver(..)
+  , GameOverWit(..), GameOver
   -- * Represent game state and updates
   , GameState(..)
   , Update(..), Coord(..), InPlay, startInPlay
@@ -113,23 +113,30 @@ $(singletonsOnly [d|
 --  Predicates
 -- ********************************
 
--- | Parameterized predicate witness that a piece has won a row
-data Victory :: [Maybe Piece] -> Piece -> Type where
-    Victory :: All [] (EqualTo ('Just p)) @@ as
-            -> Victory ('Just p ': as) p
+-- | Witness that a row is won by a given piece.
+data VicWit :: [Maybe Piece] -> Piece -> Type where
+    VicWit :: All [] (EqualTo ('Just p)) @@ as
+            -> VicWit ('Just p ': as) p
 
-instance Decidable (Found (TyPP Victory)) where
+-- | Parameterized predicate that a piece has won a given row
+--
+-- @
+-- 'Victory' :: 'ParamPred' [Maybe 'Piece'] Piece
+-- @
+type Victory = TyPP VicWit
+
+instance Decidable (Found Victory) where
     decide = \case
       SNil -> Disproved \case
         _ :&: v -> case v of {}
       SNothing `SCons` _ -> Disproved \case
         _ :&: v -> case v of {}
       SJust (x@Sing :: Sing p) `SCons` xs -> case decide @(All [] (EqualTo ('Just p))) xs of
-        Proved p    -> Proved $ x :&: Victory p
+        Proved p    -> Proved $ x :&: VicWit p
         Disproved r -> Disproved \case
-          _ :&: Victory a -> r a
+          _ :&: VicWit a -> r a
 
-instance Auto (Not (Found (TyPP Victory))) ('Nothing ': as) where
+instance Auto (Not (Found Victory)) ('Nothing ': as) where
     auto (_ :&: w) = case w of {}
 
 -- | Predicate that a board is won by a given player
@@ -137,7 +144,7 @@ instance Auto (Not (Found (TyPP Victory))) ('Nothing ': as) where
 -- @
 -- Winner :: ParamPred Board Piece
 -- @
-type Winner = LinesSym0 `PPMap` AnyMatch [] (TyPP Victory)
+type Winner = LinesSym0 `PPMap` AnyMatch [] Victory
 
 -- | Predicate that all spots have been played (cats game).
 --
@@ -151,16 +158,22 @@ type Cats = All [] (All [] IsJust)
 -- ********************************
 
 -- | Witness that a game is in a specific mode.
---
--- Generate using 'Taken' for 'Found BoardResultFOr'.
-data GameOver :: Board -> Result -> Type where
+data GameOverWit :: Board -> Result -> Type where
     GOVictory :: Winner b @@ p
-              -> GameOver b ('ResWin p)
+              -> GameOverWit b ('ResWin p)
     GOCats    :: Not (Found Winner) @@ b
               -> Cats @@ b
-              -> GameOver b 'ResCats
+              -> GameOverWit b 'ResCats
 
-instance Decidable (Found (TyPP GameOver)) where
+-- | Parameterized predicate that a game is won by a player (or cats) for
+-- for a given board.
+--
+-- @
+-- GameOver :: ParamPred Board Result
+-- @
+type GameOver = TyPP GameOverWit
+
+instance Decidable (Found GameOver) where
     decide b = case search @Winner b of
       Proved (p :&: v) -> Proved $ SResWin p :&: GOVictory v
       Disproved r      -> case decide @Cats b of
@@ -170,14 +183,14 @@ instance Decidable (Found (TyPP GameOver)) where
           SResCats  :&: GOCats _ c  -> r' c
 
 -- | A predicate that a game is still in play
-type InPlay = Not (Found (TyPP GameOver))
+type InPlay = Not (Found GameOver)
 
 -- | Represents a legal update to a board (in-bounds, and does not
 -- overwrite a played piece)
-data Update :: (N, N) -> Piece -> Board -> Board -> Type where
-    Update :: Coord b 'Nothing '(i, j)
+data Update :: Piece -> Board -> Board -> Type where
+    Update :: Coord '(i, j) b 'Nothing
            -> Sing p
-           -> Update '(i, j) p b (PlaceBoard i j p b)
+           -> Update p b (PlaceBoard i j p b)
 
 -- | Potential results of 'pick': A verified move, or one of many failures
 -- (with proof of failures)
@@ -205,7 +218,7 @@ instance Provable (TyPred Pick) where
 data GameState :: Piece -> Board -> Type where
     GSStart  :: GameState 'PX EmptyBoard
     GSUpdate :: InPlay @@ b1
-             -> Update ij p        b1 b2
+             -> Update    p        b1 b2
              -> GameState p        b1
              -> GameState (AltP p)    b2
 

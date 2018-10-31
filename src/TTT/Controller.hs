@@ -26,13 +26,17 @@ import           Data.Singletons.Sigma
 import           Data.Singletons.TH
 import           Data.Type.Lens
 import           Data.Type.Predicate
+import           Data.Type.Predicate.Param
 import           TTT.Core
 import qualified Data.Map                        as M
 import qualified Data.Vector                     as V
 import qualified System.Random.MWC               as MWC
 import qualified System.Random.MWC.Distributions as MWC
 
-type Move (b :: Board) = Σ (N, N) (TyCon (Coord b 'Nothing))
+data AvailableSpot :: ParamPred Board (N, N)
+type instance Apply (AvailableSpot b) c = Coord c b 'Nothing
+
+type Move = Found AvailableSpot
 
 data CContext p b = CC { _ccBoard     :: Sing b
                        , _ccInPlay    :: InPlay @@ b
@@ -40,11 +44,11 @@ data CContext p b = CC { _ccBoard     :: Sing b
                        , _ccPlayer    :: Sing p
                        }
 
-type Controller m p = forall b. CContext p b -> m (Maybe (Move b))
+type Controller m p = forall b. CContext p b -> m (Maybe (Move @@ b))
 
 validMoves
     :: Sing b
-    -> M.Map (N, N) (Move b)
+    -> M.Map (N, N) (Move @@ b)
 validMoves b = M.fromList do
     (FromSing i, row) <- zip (iterate S Z) (FromSing b)
     (FromSing j, _  ) <- zip (iterate S Z) row
@@ -57,7 +61,7 @@ shuffledValidMoves
     :: PrimMonad m
     => Sing b
     -> MWC.Gen (PrimState m)
-    -> m [((N, N), Move b)]
+    -> m [((N, N), Move @@ b)]
 shuffledValidMoves b g = V.toList
     <$> MWC.uniformShuffle (V.fromList . M.toList . validMoves $ b) g
 
@@ -68,7 +72,7 @@ priorityController
     -> Controller m p
 priorityController xs CC{..} = pure $ asum (map (uncurry (go _ccBoard)) xs)
   where
-    go :: Sing b -> N -> N -> Maybe (Move b)
+    go :: Sing b -> N -> N -> Maybe (Move @@ b)
     go b' (FromSing i) (FromSing j) = case proveTC (STuple3 i j b') of
       PickValid i' j' -> Just $ STuple2 i j :&: Coord i' j'
       _               -> Nothing
