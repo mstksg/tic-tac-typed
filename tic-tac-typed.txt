@@ -19,7 +19,7 @@ type OutOfBounds n = Not (InBounds n)
 
 -- | Represents a 2-d <a>Sel</a>.
 data Coord :: (N, N) -> [[k]] -> k -> Type
-[Coord] :: Sel i xss xs -> Sel j xs x -> Coord '(i, j) xss x
+[:$:] :: Sel i xss xs -> Sel j xs x -> Coord '(i, j) xss x
 instance Data.Singletons.Internal.SingI n => Data.Type.Predicate.Decidable (Data.Type.Sel.InBounds n)
 
 module TTT.Core
@@ -44,8 +44,8 @@ sLines :: forall a_ax8F (t_ayD8 :: [[a_ax8F]]). Sing t_ayD8 -> Sing (Apply Lines
 emptyBoard :: Board
 type family EmptyBoard :: [[Maybe Piece]]
 sEmptyBoard :: Sing (EmptyBoardSym0 :: [[Maybe Piece]])
-type family PlaceBoard a_aNzN a_aNzO a_aNzP a_aNzQ
-sPlaceBoard :: forall arg_aNzZ arg_aNA0 arg_aNA1 arg_aNA2. Sing arg_aNzZ -> Sing arg_aNA0 -> Sing arg_aNA1 -> Sing arg_aNA2 -> Sing (Apply (Apply (Apply (Apply PlaceBoardSym0 arg_aNzZ) arg_aNA0) arg_aNA1) arg_aNA2)
+type family PlaceBoard (a_aNE6 :: N) (a_aNE7 :: N) (a_aNE8 :: Piece) (a_aNE9 :: [[Maybe Piece]]) :: [[Maybe Piece]]
+sPlaceBoard :: forall (t_aNEk :: N) (t_aNEl :: N) (t_aNEm :: Piece) (t_aNEn :: [[Maybe Piece]]). Sing t_aNEk -> Sing t_aNEl -> Sing t_aNEm -> Sing t_aNEn -> Sing (Apply (Apply (Apply (Apply PlaceBoardSym0 t_aNEk) t_aNEl) t_aNEm) t_aNEn :: [[Maybe Piece]])
 
 -- | Convert a parameterized predicate into a predicate on the parameter.
 --   
@@ -108,11 +108,11 @@ data GameState :: Piece -> Board -> Type
 -- | Represents a legal update to a board (in-bounds, and does not
 --   overwrite a played piece)
 data Update :: Piece -> Board -> Board -> Type
-[Update] :: Coord '(i, j) b  'Nothing -> Sing p -> Update p b (PlaceBoard i j p b)
+[Update] :: forall i j p b. () => Coord '(i, j) b  'Nothing -> Update p b (PlaceBoard i j p b)
 
 -- | Represents a 2-d <a>Sel</a>.
 data Coord :: (N, N) -> [[k]] -> k -> Type
-[Coord] :: Sel i xss xs -> Sel j xs x -> Coord '(i, j) xss x
+[:$:] :: Sel i xss xs -> Sel j xs x -> Coord '(i, j) xss x
 
 -- | A predicate that a game is still in play
 type InPlay = Not (Found GameOver)
@@ -121,13 +121,13 @@ type InPlay = Not (Found GameOver)
 startInPlay :: InPlay @@ EmptyBoard
 
 -- | Type-safe "play".
-play :: forall b i j row p. () => (InPlay @@ b) -> Sel i b row -> Sel j row  'Nothing -> Sing p -> GameState p b -> GameState (AltP p) (PlaceBoard i j p b)
+play :: forall b i j p. () => (InPlay @@ b) -> Coord '(i, j) b  'Nothing -> GameState p b -> GameState (AltP p) (PlaceBoard i j p b)
 
 -- | Potential results of <tt>pick</tt>: A verified move, or one of many
 --   failures (with proof of failures)
 data Pick :: (N, N, Board) -> Type
-[PickValid] :: Sel i b row -> Sel j row  'Nothing -> Pick '(i, j, b)
-[PickPlayed] :: Sel i b row -> Sel j row ( 'Just p) -> Sing p -> Pick '(i, j, b)
+[PickValid] :: Coord '(i, j) b  'Nothing -> Pick '(i, j, b)
+[PickPlayed] :: Coord '(i, j) b ( 'Just p) -> Sing p -> Pick '(i, j, b)
 [PickOoBX] :: (OutOfBounds i @@ b) -> Pick '(i, j, b)
 [PickOoBY] :: Sel i b row -> (OutOfBounds j @@ row) -> Pick '(i, j, b)
 data ResWinSym0 :: (~>) Piece Result
@@ -139,23 +139,23 @@ type AltPSym1 (a6989586621679142118 :: Piece) = AltP a6989586621679142118
 data LinesSym0 :: forall a6989586621679137181. (~>) [[a6989586621679137181]] [[a6989586621679137181]]
 type LinesSym1 (a6989586621679142115 :: [[a6989586621679137181]]) = Lines a6989586621679142115
 type EmptyBoardSym0 = EmptyBoard
-data PlaceBoardSym0 a6989586621679200367
-data PlaceBoardSym1 a6989586621679200367 a6989586621679200368
-data PlaceBoardSym2 a6989586621679200367 a6989586621679200368 a6989586621679200369
-data PlaceBoardSym3 a6989586621679200367 a6989586621679200368 a6989586621679200369 a6989586621679200370
-type PlaceBoardSym4 a6989586621679200367 a6989586621679200368 a6989586621679200369 a6989586621679200370 = PlaceBoard a6989586621679200367 a6989586621679200368 a6989586621679200369 a6989586621679200370
+data PlaceBoardSym0 :: (~>) N ((~>) N ((~>) Piece ((~>) [[Maybe Piece]] [[Maybe Piece]])))
+data PlaceBoardSym1 (a6989586621679200634 :: N) :: (~>) N ((~>) Piece ((~>) [[Maybe Piece]] [[Maybe Piece]]))
+data PlaceBoardSym2 (a6989586621679200634 :: N) (a6989586621679200635 :: N) :: (~>) Piece ((~>) [[Maybe Piece]] [[Maybe Piece]])
+data PlaceBoardSym3 (a6989586621679200634 :: N) (a6989586621679200635 :: N) (a6989586621679200636 :: Piece) :: (~>) [[Maybe Piece]] [[Maybe Piece]]
+type PlaceBoardSym4 (a6989586621679200634 :: N) (a6989586621679200635 :: N) (a6989586621679200636 :: Piece) (a6989586621679200637 :: [[Maybe Piece]]) = PlaceBoard a6989586621679200634 a6989586621679200635 a6989586621679200636 a6989586621679200637
 instance Data.Type.Predicate.Provable (Data.Type.Predicate.TyPred TTT.Core.Pick)
 instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.GameOver)
 instance Data.Type.Predicate.Decidable (Data.Type.Predicate.Param.Found TTT.Core.Victory)
 instance Data.Type.Predicate.Auto.Auto (Data.Type.Predicate.Not (Data.Type.Predicate.Param.Found TTT.Core.Victory)) ('GHC.Maybe.Nothing : as)
 instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings TTT.Core.PlaceBoardSym0
 instance Data.Singletons.Internal.SingI TTT.Core.PlaceBoardSym0
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym1 a6989586621679200367)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym1 a6989586621679200634)
 instance Data.Singletons.Internal.SingI d => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym1 d)
-instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym2 a6989586621679200368 a6989586621679200367)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym2 a6989586621679200635 a6989586621679200634)
 instance (Data.Singletons.Internal.SingI d1, Data.Singletons.Internal.SingI d2) => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym2 d1 d2)
-instance forall k1 (a6989586621679200369 :: Data.Type.Lens.N) (a6989586621679200368 :: Data.Type.Lens.N) (a6989586621679200367 :: k1). Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym3 a6989586621679200369 a6989586621679200368 a6989586621679200367)
-instance forall k1 (d1 :: Data.Type.Lens.N) (d2 :: Data.Type.Lens.N) (d3 :: k1). (Data.Singletons.Internal.SingI d1, Data.Singletons.Internal.SingI d2, Data.Singletons.Internal.SingI d3) => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym3 d1 d2 d3)
+instance Data.Singletons.SuppressUnusedWarnings.SuppressUnusedWarnings (TTT.Core.PlaceBoardSym3 a6989586621679200636 a6989586621679200635 a6989586621679200634)
+instance (Data.Singletons.Internal.SingI d1, Data.Singletons.Internal.SingI d2, Data.Singletons.Internal.SingI d3) => Data.Singletons.Internal.SingI (TTT.Core.PlaceBoardSym3 d1 d2 d3)
 instance GHC.Classes.Eq TTT.Core.Result
 instance GHC.Show.Show TTT.Core.Result
 instance GHC.Classes.Eq TTT.Core.Piece
