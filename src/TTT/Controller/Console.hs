@@ -47,10 +47,10 @@ consoleController CC{..} = liftIO . repeatUntil $ do
           'q':_ -> pure $ Just Nothing
           _     -> Nothing <$ putStrLn "No parse. Try again. (q or Ctrl+D to quit)"
         Just (FromSing i, FromSing j) -> case proveTC (STuple3 i j _ccBoard) of
-          PickValid i' j' -> pure . Just . Just $ STuple2 i j :&: Coord i' j'
-          PickPlayed{}    -> Nothing <$ putStrLn "Spot is already played. Try again."
-          PickOoBX{}      -> Nothing <$ putStrLn "Out of bounds. Try again."
-          PickOoBY{}      -> Nothing <$ putStrLn "Out of bounds. Try again."
+          PickValid c  -> pure . Just . Just $ STuple2 i j :&: c
+          PickPlayed{} -> Nothing <$ putStrLn "Spot is already played. Try again."
+          PickOoBX{}   -> Nothing <$ putStrLn "Out of bounds. Try again."
+          PickOoBY{}   -> Nothing <$ putStrLn "Out of bounds. Try again."
 
 parseCoord :: String -> Maybe (N, N)
 parseCoord (j:i:_) = (,) <$> M.lookup i rowMap <*> M.lookup (toUpper j) colMap

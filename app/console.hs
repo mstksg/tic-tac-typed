@@ -93,9 +93,9 @@ runController p c (b :&: (g, r)) = do
                         }
     case move of
       Nothing -> throwE (FromSing b, EForfeit (FromSing p))
-      Just (STuple2 i j :&: Coord i' j') -> do
+      Just (STuple2 i j :&: co) -> do
         let b' = sPlaceBoard i j p b
-            g' = play r i' j' p g
+            g' = play r co g
         case searchTC b' of
           Proved (s :&: _) -> throwE (FromSing b', EGameOver (FromSing s))
           Disproved m      -> pure $ b' :&: (g', m)

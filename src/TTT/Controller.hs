@@ -52,9 +52,9 @@ validMoves
 validMoves b = M.fromList do
     (FromSing i, row) <- zip (iterate S Z) (FromSing b)
     (FromSing j, _  ) <- zip (iterate S Z) row
-    PickValid i' j'   <- pure $ proveTC (STuple3 i j b)
+    PickValid c       <- pure $ proveTC (STuple3 i j b)
     pure ( (FromSing i, FromSing j)
-         , STuple2 i j :&: Coord i' j'
+         , STuple2 i j :&: c
          )
 
 shuffledValidMoves
@@ -74,8 +74,8 @@ priorityController xs CC{..} = pure $ asum (map (uncurry (go _ccBoard)) xs)
   where
     go :: Sing b -> N -> N -> Maybe (Move @@ b)
     go b' (FromSing i) (FromSing j) = case proveTC (STuple3 i j b') of
-      PickValid i' j' -> Just $ STuple2 i j :&: Coord i' j'
-      _               -> Nothing
+      PickValid c -> Just $ STuple2 i j :&: c
+      _           -> Nothing
 
 -- | Picks a random move
 randomController

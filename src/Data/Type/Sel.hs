@@ -62,6 +62,6 @@ instance SingI n => Decidable (InBounds n) where
 
 -- | Represents a 2-d 'Sel'.
 data Coord :: (N, N) -> [[k]] -> k -> Type where
-    Coord :: Sel i xss xs
+    (:$:) :: Sel i xss xs
           -> Sel j xs  x
           -> Coord '(i, j) xss x

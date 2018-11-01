@@ -86,7 +86,7 @@ minimax b r p g n = do
       F.foldM (F.sink go) (snd <$> moves)
   where
     go :: Move @@ b -> m (Option (Max (Arg (RankRes p) (Move @@ b))))
-    go m@(STuple2 i j :&: Coord i' j') = do
+    go m@(STuple2 i j :&: c) = do
       res <- case searchTC b' of
         Proved (s :&: _) -> pure @m. pure @Option $ Just (FromSing s)
         Disproved v      -> case n of
@@ -96,7 +96,7 @@ minimax b r p g n = do
       pure $ Max . flip Arg m . RR <$> res
       where
         b' = sPlaceBoard i j p b
-        g' = play r i' j' p g
+        g' = play r c g
 
 -- | This minimax implementation is "more verified" than the original one.
 -- In addition to the verifications of the original one, we verify that the
@@ -160,13 +160,13 @@ buildMMTree b gm p g = \case
     go  :: Sing n'
         -> Move @@ b
         -> DM.DSum Sing (SomeBranch n' b p)
-    go n' (STuple2 i j :&: c@(Coord i' j')) = (STuple2 i j DM.:=>) . flip SB c $
+    go n' (STuple2 i j :&: c) = (STuple2 i j DM.:=>) . flip SB c $
         case searchTC b' of
           Proved (s :&: m) -> MMGameOver m s
           Disproved m      -> buildMMTree b' m (sAltP p) g' n'
       where
         b' = sPlaceBoard i j p b
-        g' = play gm i' j' p g
+        g' = play gm c g
 
 pickMMTree
     :: forall n b p m. (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)

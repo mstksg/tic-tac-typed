@@ -106,7 +106,8 @@ $(singletons [d|
   |])
 
 $(singletonsOnly [d|
-  placeBoard i j p b = set (ixList i . ixList j) (Just p) b
+  placeBoard :: N -> N -> Piece -> Board -> Board
+  placeBoard i j p = set (ixList i . ixList j) (Just p)
   |])
 
 -- ********************************
@@ -188,16 +189,15 @@ type InPlay = Not (Found GameOver)
 -- | Represents a legal update to a board (in-bounds, and does not
 -- overwrite a played piece)
 data Update :: Piece -> Board -> Board -> Type where
-    Update :: Coord '(i, j) b 'Nothing
-           -> Sing p
+    Update :: forall i j p b. ()
+           => Coord '(i, j) b 'Nothing
            -> Update p b (PlaceBoard i j p b)
 
 -- | Potential results of 'pick': A verified move, or one of many failures
 -- (with proof of failures)
 data Pick :: (N, N, Board) -> Type where
-    PickValid  :: Sel i b row        -> Sel j row 'Nothing   -> Pick '(i, j, b)
-    PickPlayed :: Sel i b row        -> Sel j row ('Just p)
-               -> Sing p                                     -> Pick '(i, j, b)
+    PickValid  :: Coord '(i, j) b 'Nothing                   -> Pick '(i, j, b)
+    PickPlayed :: Coord '(i, j) b ('Just p) -> Sing p        -> Pick '(i, j, b)
     PickOoBX   :: OutOfBounds i @@ b                         -> Pick '(i, j, b)
     PickOoBY   :: Sel i b row        -> OutOfBounds j @@ row -> Pick '(i, j, b)
 
@@ -206,8 +206,8 @@ instance Provable (TyPred Pick) where
       case searchTC b of
         Proved (row :&: i) -> case searchTC row of
           Proved (p :&: j) -> case p of
-            SNothing -> PickValid i j
-            SJust c  -> PickPlayed i j c
+            SNothing -> PickValid (i :$: j)
+            SJust c  -> PickPlayed (i :$: j) c
           Disproved v -> PickOoBY i v
         Disproved v -> PickOoBX v
 
@@ -236,11 +236,9 @@ startInPlay = \case
 
 -- | Type-safe "play".
 play
-    :: forall b i j row p. ()
+    :: forall b i j p. ()
     => InPlay @@ b
-    -> Sel i b    row
-    -> Sel j row 'Nothing
-    -> Sing p
+    -> Coord '(i, j) b 'Nothing
     -> GameState p b
     -> GameState (AltP p) (PlaceBoard i j p b)
-play r i j p = GSUpdate r (Update (Coord i j) p)
+play r c = GSUpdate r (Update c)
