@@ -189,15 +189,15 @@ type InPlay = Not (Found GameOver)
 -- | Represents a legal update to a board (in-bounds, and does not
 -- overwrite a played piece)
 data Update :: Piece -> Board -> Board -> Type where
-    Update :: forall i j p b. ()
-           => Coord '(i, j) b 'Nothing
-           -> Update p b (PlaceBoard i j p b)
+    Update :: forall i j p b b'. ()
+           => Place2D '(i, j) 'Nothing ('Just p) b b'
+           -> Update p b b'
 
 -- | Potential results of 'pick': A verified move, or one of many failures
 -- (with proof of failures)
 data Pick :: (N, N, Board) -> Type where
-    PickValid  :: Coord '(i, j) b 'Nothing                   -> Pick '(i, j, b)
-    PickPlayed :: Coord '(i, j) b ('Just p) -> Sing p        -> Pick '(i, j, b)
+    PickValid  :: Place2D '(i, j) 'Nothing  ('Just p) b b'    -> Pick '(i, j, b)
+    PickPlayed :: Place2D '(i, j) ('Just p) p'        b b'    -> Sing p        -> Pick '(i, j, b)
     PickOoBX   :: OutOfBounds i @@ b                         -> Pick '(i, j, b)
     PickOoBY   :: Sel i b row        -> OutOfBounds j @@ row -> Pick '(i, j, b)
 

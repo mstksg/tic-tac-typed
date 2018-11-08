@@ -1,17 +1,18 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE BlockArguments       #-}
-{-# LANGUAGE EmptyCase            #-}
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE GADTs                #-}
-{-# LANGUAGE KindSignatures       #-}
-{-# LANGUAGE LambdaCase           #-}
-{-# LANGUAGE PatternSynonyms      #-}
-{-# LANGUAGE RankNTypes           #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
-{-# LANGUAGE TypeFamilies         #-}
-{-# LANGUAGE TypeInType           #-}
-{-# LANGUAGE TypeOperators        #-}
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE AllowAmbiguousTypes   #-}
+{-# LANGUAGE BlockArguments        #-}
+{-# LANGUAGE EmptyCase             #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE GADTs                 #-}
+{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE LambdaCase            #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE PatternSynonyms       #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeInType            #-}
+{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 module Data.Type.Sel (
     Sel(..)
@@ -19,6 +20,10 @@ module Data.Type.Sel (
   , Coord(..)
   -- , ixSel
   -- , sameSel
+  , Placer(..)
+  , Placed(..)
+  , Place2D(..)
+  -- , placer
   ) where
 
 import           Data.Kind
@@ -65,3 +70,40 @@ data Coord :: (N, N) -> [[k]] -> k -> Type where
     (:$:) :: Sel i xss xs
           -> Sel j xs  x
           -> Coord '(i, j) xss x
+
+data Placer :: N -> k -> k -> [k] -> [k] -> Type where
+    PlacerZ :: Placer 'Z     x y (x ': as) (y ': as)
+    PlacerS :: Placer     n  x y       as        bs
+            -> Placer ('S n) x y (a ': as) (a ': bs)
+
+data Placed :: N -> k -> [k] -> Type where
+    Placed :: Sing x
+           -> Sing ys
+           -> Placer n x y xs ys
+           -> Placed n y xs
+
+instance (SingI n, SingI x) => Decidable (TyPred (Placed n x)) where
+    decide = placer sing sing
+
+placer
+    :: Sing (n :: N)
+    -> Sing (x :: k)
+    -> Sing (xs :: [k])
+    -> Decision (Placed n x xs)
+placer = \case
+    SZ -> \x -> \case
+      SNil         -> Disproved $ \(Placed _ _ p) -> case p of {}
+      y `SCons` ys -> Proved    $ Placed y (x `SCons` ys) PlacerZ
+    SS n -> \x -> \case
+      SNil         -> Disproved $ \(Placed _ _ p) -> case p of {}
+      y `SCons` ys -> case placer n x ys of
+        Proved (Placed z ys' p) -> Proved $ Placed z (y `SCons` ys') (PlacerS p)
+        Disproved v -> Disproved $ \(Placed z (_ `SCons` ys') (PlacerS p)) ->
+          v $ Placed z ys' p
+
+data Place2D :: (N, N) -> k -> k -> [[k]] -> [[k]] -> Type where
+    P2D :: Placer i xs ys xss yss
+        -> Placer j x  y  xs  ys
+        -> Place2D '(i, j) x y xss yss
+
+
