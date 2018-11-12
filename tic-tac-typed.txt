@@ -195,7 +195,7 @@ instance Data.Singletons.Internal.SingI 'TTT.Core.PX
 instance Data.Singletons.Internal.SingI 'TTT.Core.PO
 
 module TTT.Controller
-type Controller m p = forall b. CContext p b -> m (Maybe (Move @@ b))
+type Controller m p = forall b. CContext p b -> m (CResponse b)
 type Move = Found AvailableSpot
 data CContext p b
 CC :: Sing b -> (InPlay @@ b) -> GameState p b -> Sing p -> CContext p b
@@ -203,6 +203,10 @@ CC :: Sing b -> (InPlay @@ b) -> GameState p b -> Sing p -> CContext p b
 [_ccInPlay] :: CContext p b -> InPlay @@ b
 [_ccGameState] :: CContext p b -> GameState p b
 [_ccPlayer] :: CContext p b -> Sing p
+data CResponse b
+CRQuit :: CResponse b
+CRMove :: (Move @@ b) -> CResponse b
+maybeToCResp :: Maybe (Move @@ b) -> CResponse b
 
 -- | Picks the first valid move in the given list
 priorityController :: Applicative m => [(N, N)] -> Controller m p
