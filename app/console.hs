@@ -92,8 +92,8 @@ runController p c (b :&: (g, r)) = do
                         , _ccPlayer = p
                         }
     case move of
-      Nothing -> throwE (FromSing b, EForfeit (FromSing p))
-      Just (STuple2 i j :&: co) -> do
+      CRQuit -> throwE (FromSing b, EForfeit (FromSing p))
+      CRMove (STuple2 i j :&: co) -> do
         let b' = sPlaceBoard i j p b
             g' = play r co g
         case searchTC b' of

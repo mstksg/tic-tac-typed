@@ -10,7 +10,7 @@
 {-# LANGUAGE TypeOperators    #-}
 
 module TTT.Controller (
-    Controller, Move, CContext(..)
+    Controller, Move, CContext(..), CResponse(..), maybeToCResp
   , priorityController
   , randomController
   , validMoves
@@ -44,7 +44,14 @@ data CContext p b = CC { _ccBoard     :: Sing b
                        , _ccPlayer    :: Sing p
                        }
 
-type Controller m p = forall b. CContext p b -> m (Maybe (Move @@ b))
+data CResponse b = CRQuit
+                 | CRMove (Move @@ b)
+
+maybeToCResp :: Maybe (Move @@ b) -> CResponse b
+maybeToCResp Nothing  = CRQuit
+maybeToCResp (Just m) = CRMove m
+
+type Controller m p = forall b. CContext p b -> m (CResponse b)
 
 validMoves
     :: Sing b
@@ -70,7 +77,10 @@ priorityController
     :: Applicative m
     => [(N, N)]
     -> Controller m p
-priorityController xs CC{..} = pure $ asum (map (uncurry (go _ccBoard)) xs)
+priorityController xs CC{..} = pure 
+                             . maybeToCResp
+                             . asum
+                             $ map (uncurry (go _ccBoard)) xs
   where
     go :: Sing b -> N -> N -> Maybe (Move @@ b)
     go b' (FromSing i) (FromSing j) = case proveTC (STuple3 i j b') of
@@ -82,10 +92,10 @@ randomController
     :: (PrimMonad m, MonadReader (MWC.Gen (PrimState m)) m)
     => Controller m p
 randomController CC{..}
-    | M.null vm = pure Nothing
+    | M.null vm = pure CRQuit
     | otherwise = do
         i <- MWC.uniformR (0, M.size vm - 1) =<< ask
-        pure . Just . snd $ M.elemAt i vm
+        pure . CRMove . snd $ M.elemAt i vm
   where
     vm = validMoves _ccBoard
 

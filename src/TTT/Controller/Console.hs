@@ -1,5 +1,6 @@
 {-# LANGUAGE BlockArguments   #-}
 {-# LANGUAGE GADTs            #-}
+{-# LANGUAGE LambdaCase       #-}
 {-# LANGUAGE PolyKinds        #-}
 {-# LANGUAGE RankNTypes       #-}
 {-# LANGUAGE RecordWildCards  #-}
@@ -11,11 +12,8 @@ module TTT.Controller.Console (
   ) where
 
 import           Control.Monad.IO.Class
-import           Control.Monad.Trans.Maybe
 import           Data.Char
-import           Data.Foldable
 import           Data.List
-import           Data.Maybe
 import           Data.Singletons
 import           Data.Singletons.Prelude
 import           Data.Singletons.Sigma
@@ -23,14 +21,16 @@ import           Data.Type.Lens
 import           Data.Type.Predicate
 import           TTT.Controller
 import           TTT.Core
-import qualified Data.Map                  as M
-import qualified System.Console.Haskeline  as H
+import qualified Data.Map                     as M
+import qualified System.Console.Haskeline     as H
 
 repeatUntil
     :: Monad m
     => m (Maybe a)
     -> m a
-repeatUntil = fmap fromJust . runMaybeT . asum . repeat . MaybeT
+repeatUntil act = go
+  where
+    go = maybe go pure =<< act
 
 -- | Will never allow any invalid moves.
 consoleController
@@ -41,13 +41,13 @@ consoleController CC{..} = liftIO . repeatUntil $ do
     putStrLn $ "Move for " ++ show (FromSing _ccPlayer)
     ml <- H.runInputT H.defaultSettings $ H.getInputLine "> "
     case ml of
-      Nothing -> pure $ Just Nothing
+      Nothing -> pure $ Just CRQuit
       Just l  -> case parseCoord l of
         Nothing -> case map toLower l of
-          'q':_ -> pure $ Just Nothing
+          'q':_ -> pure $ Just CRQuit
           _     -> Nothing <$ putStrLn "No parse. Try again. (q or Ctrl+D to quit)"
         Just (FromSing i, FromSing j) -> case proveTC (STuple3 i j _ccBoard) of
-          PickValid c  -> pure . Just . Just $ STuple2 i j :&: c
+          PickValid c  -> pure . Just . CRMove $ STuple2 i j :&: c
           PickPlayed{} -> Nothing <$ putStrLn "Spot is already played. Try again."
           PickOoBX{}   -> Nothing <$ putStrLn "Out of bounds. Try again."
           PickOoBY{}   -> Nothing <$ putStrLn "Out of bounds. Try again."
